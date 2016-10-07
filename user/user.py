@@ -1,6 +1,6 @@
 import re
 
-class User():
+class user:
     permission_bits = {
         'createUser': 1,
         'deleteUser': 2,
@@ -12,9 +12,13 @@ class User():
         'deleteACLSchema': 128
     }
 
-    def __init__(self, username, permissions, password = '', id = 0):
+    def __init__(self, username, permissions, password = None, idnum = None):
         self.setUsername(username)
         self.setPermissions(permissions)
+        if password != None:
+            self.setPassword(password)
+        if idnum != None:
+            self.setId(idnum)
 
     def setUsername(self, username):
         if len(username) > 3:
@@ -30,7 +34,7 @@ class User():
 
     def setPassword(self, password):
         if len(password) > 8:
-            if not re.match(r'\s'):
+            if re.match(r'\s', password):
                 raise ValueError('Passwords can not contain spaces.')
             else:
                 self.password = password
@@ -41,7 +45,7 @@ class User():
         return self.password
 
     def setPermissions(self, permissions = 0):
-        self.setPermissions = 0
+        self.permissions = 0
         try:
             for x in permissions:
                 self.setPermission(x, True)
@@ -52,14 +56,17 @@ class User():
         return self.permissions
 
     def setPermission(self, permission, allow = True):
-        if allow:
-            self.permissions = self.permissions | permission_bits[permission]
-        else:
-            self.permissions = self.permissions & ~permission_bits[permission]
+        try:
+            if allow:
+                self.permissions = self.permissions | self.permission_bits[permission]
+            else:
+                self.permissions = self.permissions & ~self.permission_bits[permission]
+        except KeyError:
+            raise KeyError("User permission '%s' does not exist." % permission)
 
     def getPermission(self, permission):
         try:
-            return self.permissions & permission_bits[permission]
+            return self.permissions & self.permission_bits[permission]
         except KeyError:
             raise KeyError("Permission '%s' does not exist" % permission)
     def setId(self, id):
