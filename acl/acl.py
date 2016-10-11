@@ -81,8 +81,12 @@ class ACL:
                 raise ValueError('DACL owner name or domain is not set.')
             else:
                 self.owner = owner
+                self.owner['id'] = ACL.getAccountId(self.owner['name'], self.owner['domain'])
         except KeyError:
             raise KeyError('DACL owner is missing name or domain property.')
+
+    def getOwner(self):
+        return self.owner
 
     def setACL(self, acl):
         for x in range(len(acl)):
@@ -112,8 +116,26 @@ class ACL:
         try:
             ace['inherit_bits'] = self.getInheritBits(ace['inherit'])
         except KeyError:
+            ace['inherit_bits'] = 0
             pass
+    def getExpandedACL(self):
+        expanded_acl = []
+        for x in range(len(self.acl)):
+            current_acl = self.acl[x]
+            expanded_acl.append({
+                'account_id': current_acl['account']['id'],
+                'mask_bits': current_acl['mask_bits'],
+                'type': current_acl['type'],
+                'inherit_bits': current_acl['inherit_bits']
+            })
 
+        return expanded_acl
+
+    def getIgnoreInherit(self):
+        return self.ignore_inheritance
+
+    def getSkip(self):
+        return self.skip
     @staticmethod
     def getAccountId(name, domain):
         return str(ACL.getAccount(name, domain)[0])[6:]
