@@ -91,24 +91,24 @@ class ACL:
 
     def validateACE(self, ace):
         try:
-            ace['account']['id'] = getAccountId(ace['account']['name'], ace['account']['domain'])
+            ace['account']['id'] = self.getAccountId(ace['account']['name'], ace['account']['domain'])
         except KeyError:
             raise KeyError('ACE account property is invalid.')
 
         try:
-            ace['mask_bits'] = getAccessMaskBits(ace['mask'])
+            ace['mask_bits'] = self.getAccessMaskBits(ace['mask'])
         except KeyError:
-            raise KeyError('ACE mask property is missing').
+            raise KeyError('ACE mask property is missing')
 
         try:
-            if ace['type'] != 'deny' or ace['type'] != 'allow':
-                raise ValueError('ACE type property must be either allow or deny'):
+            if ace['type'] != 'deny' and ace['type'] != 'allow':
+                raise ValueError('ACE type property must be either allow or deny')
         except KeyError:
             raise KeyError('ACE type property is missing.')
 
     @staticmethod
     def getAccountId(name, domain):
-        return str(getAccount(name, domain)[0])[6:]
+        return str(ACL.getAccount(name, domain)[0])[6:]
 
     @staticmethod
     def getAccount(name, domain):
@@ -119,7 +119,7 @@ class ACL:
         bits = 0
         for mask in masks:
             try:
-                bits = bits | access_bits[mask]
+                bits = bits | ACL.access_bits[mask]
             except KeyError:
                 raise KeyError("ACE Mask does not exist: %s" % mask)
         return bits
