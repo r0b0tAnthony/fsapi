@@ -110,8 +110,7 @@ class ACL:
             raise KeyError('ACE type property is missing.')
 
         try:
-            if ace['inherit'] not in keys(self.inherit_bits):
-                raise ValueError("Inherit Flag '%s' does not exist.")
+            ace['inherit_bits'] = self.getInheritBits(ace['inherit'])
         except KeyError:
             pass
 
@@ -131,4 +130,13 @@ class ACL:
                 bits = bits | ACL.access_bits[mask]
             except KeyError:
                 raise ValueError("ACE Mask does not exist: %s" % mask)
+        return bits
+    @staticmethod
+    def getInheritBits(flags):
+        bits = 0
+        for flag in flags:
+            try:
+                bits = bits | ACL.inherit_bits[flag]
+            except KeyError:
+                raise ValueError("ACE Inherit flag does not exist: %s" % flag)
         return bits
