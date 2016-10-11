@@ -21,7 +21,6 @@ class aclSchema:
 
     def setDACL(self, dacl, schema):
         for key in dacl:
-            print key
             currentacl = dacl[key]
             schema[key] = {}
             schema[key]['acl'] = acl.ACL(currentacl['type'], currentacl['owner'], currentacl['acl'])
