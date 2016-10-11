@@ -121,5 +121,5 @@ class ACL:
             try:
                 bits = bits | ACL.access_bits[mask]
             except KeyError:
-                raise KeyError("ACE Mask does not exist: %s" % mask)
+                raise ValueError("ACE Mask does not exist: %s" % mask)
         return bits
