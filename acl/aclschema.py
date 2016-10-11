@@ -1,11 +1,16 @@
 import re
 from . import acl
 import pprint
+from os import path
+
 class aclSchema:
     def __init__(self, name, dacl):
         self.setName(name)
         self.schema = {}
         self.setDACL(dacl, self.schema)
+        self.expanded_schema = {}
+        self.setExpandedDACL(self.schema, self.expanded_schema)
+
     def setName(self, name):
         if len(name) > 3:
             if re.match(r'^[\w]+$', name):
@@ -35,3 +40,40 @@ class aclSchema:
                     raise e
     def getDACL(self):
         return self.schema
+
+    def setExpandedDACL(self, dacl, schema, acl_path = None):
+        for key in dacl:
+            current = dacl[key]['acl']
+            pprint.pprint(current.getOwner())
+            expanded_acl = current.getExpandedACL()
+            if len(expanded_acl) < 1:
+                continue
+                
+            expanded = {
+                'owner': current.getOwner()['id'],
+                'type': current.getType(),
+                'ignore_inheritance': current.getIgnoreInherit(),
+                'skip': current.getSkip(),
+                'acl': current.getExpandedACL()
+            }
+            if key == '__DEFAULT__':
+                regex_key = '[a-zA-Z0-9_\-\.]+'
+            else:
+                regex_key = key
+
+            if acl_path is not None:
+                path_key = path.join(acl_path, key)
+                schema[path_key] = expanded
+            else:
+                schema[key] = expanded
+
+            try:
+                self.setExpandedDACL(dacl[key]['children'], schema, key)
+            except KeyError as e:
+                if 'children' in str(e):
+                    pass
+                else:
+                    raise e
+
+    def getExpandedDACL(self):
+        return self.expanded_schema
