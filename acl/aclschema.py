@@ -1,54 +1,38 @@
 import re
-import acl
-
+from . import acl
+import pprint
 class aclSchema:
     def __init__(self, name, dacl):
-
+        self.setName(name)
+        self.schema = {}
+        self.setDACL(dacl, self.schema)
     def setName(self, name):
         if len(name) > 3:
-            if re.match(r'$[a-zA-Z0-9_\_]+^'):
+            if re.match(r'^[\w]+$', name):
                 self.name = name
             else:
-                raise ValueError('ACLSchema must contain only alphanumeric, underscores, or dashes.')
+                print "'%s'" % name
+                raise ValueError('ACLSchema name must contain only alphanumeric, underscores, or dashes.')
         else:
             raise ValueError('ACLSchema name must be more than 3 characters.')
 
     def getName(self):
         return self.name
 
-    def setDACL(self, dacl):
-
-    def validateDACL(self, dacl):
+    def setDACL(self, dacl, schema):
         for key in dacl:
-            secobj = dacl[key]
+            print key
+            currentacl = dacl[key]
+            schema[key] = {}
+            schema[key]['acl'] = acl.ACL(currentacl['type'], currentacl['owner'], currentacl['acl'])
             try:
-                if not secobj['type'] in ['folder', 'file', 'all']:
-                    raise ValueError('DACL type must be folder, file, or all.')
-            except KeyError:
-                raise KeyError('DACL must a type property.')
-
-            try:
-                if not secobj['owner']['domain'] and not secobj['owner']['name']:
-                    raise ValueError('DACL owner property must be an object of name and domain.')
-            except KeyError:
-                raise KeyError('DACL owner property is not valid.')
-
-            try:
-                for x in range(len(secobj['acl'])):
-                    try:
-                        ace = secobj['acl'][x]
-                    except KeyError:
-                        raise KeyError('DACL acl property is not valid.')
-
-                    try:
-                        if not ace['account']['name'] and not ace['account']['domain']:
-                            raise ValueError("DACL's ACL property's ACE's account property's name or domain is empty.")
-                    except KeyError:
-                        raise KeyError("DACL's ACL property's ACE's account property is invalid.")
-                    else:
-                        pass
-
-                    try:
-                        set(ace['mask']) - set(acl.access_bits.keys())
-            except KeyError:
-                raise KeyError('DACL acl property is not valid.')
+                if len(currentacl['children']) > 0:
+                    schema[key]['children'] = {}
+                    self.setDACL(currentacl['children'], schema[key]['children'])
+            except KeyError as e:
+                if 'children' in str(e):
+                    pass
+                else:
+                    raise e
+    def getDACL(self):
+        return self.schema
