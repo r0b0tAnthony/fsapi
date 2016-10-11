@@ -40,12 +40,6 @@ class ACL:
         'WRITE_DAC': con.WRITE_DAC,
         'WRITE_OWNER': con.WRITE_OWNER,
         'SYNCHRONIZE': con.SYNCHRONIZE,
-        'OBJECT_INHERIT': con.OBJECT_INHERIT_ACE,
-        'CONTAINER_INHERIT': con.CONTAINER_INHERIT_ACE,
-        'NO_PROPOGATE_INHERIT': con.NO_PROPAGATE_INHERIT_ACE,
-        'INHERIT_ONLY': con.INHERIT_ONLY_ACE,
-        'VALID_INHERIT_FLAGS': con.VALID_INHERIT_FLAGS,
-        'INHERITED_ACE': win32security.INHERITED_ACE,
         'DACL_SECURITY_INFO': win32security.DACL_SECURITY_INFORMATION,
         'SACL_SECURITY_INFO': win32security.SACL_SECURITY_INFORMATION,
         'OWNER_SECURITY_INFO': win32security.OWNER_SECURITY_INFORMATION,
@@ -56,7 +50,16 @@ class ACL:
         'PROTECTED_SACL': win32security.PROTECTED_SACL_SECURITY_INFORMATION
     }
 
-    def __init__(self, acl_type, owner, acl, ignore_inheritance = False, skip = False, children = {}):
+    inherit_bits = {
+        'OBJECT_INHERIT': con.OBJECT_INHERIT_ACE,
+        'CONTAINER_INHERIT': con.CONTAINER_INHERIT_ACE,
+        'NO_PROPOGATE_INHERIT': con.NO_PROPAGATE_INHERIT_ACE,
+        'INHERIT_ONLY': con.INHERIT_ONLY_ACE,
+        'VALID_INHERIT_FLAGS': con.VALID_INHERIT_FLAGS,
+        'INHERITED_ACE': win32security.INHERITED_ACE
+    }
+
+    def __init__(self, acl_type, owner, acl, ignore_inheritance = False, skip = False):
         self.setType(acl_type)
         self.setOwner(owner)
         self.setACL(acl)
@@ -105,6 +108,12 @@ class ACL:
                 raise ValueError('ACE type property must be either allow or deny')
         except KeyError:
             raise KeyError('ACE type property is missing.')
+
+        try:
+            if ace['inherit'] not in keys(self.inherit_bits):
+                raise ValueError("Inherit Flag '%s' does not exist.")
+        except KeyError:
+            pass
 
     @staticmethod
     def getAccountId(name, domain):
