@@ -1,7 +1,7 @@
 import re
 from . import acl
 import pprint
-from os import path
+import posixpath as path
 
 class aclSchema:
     def __init__(self, name, dacl):
@@ -48,7 +48,7 @@ class aclSchema:
             expanded_acl = current.getExpandedACL()
             if len(expanded_acl) < 1:
                 continue
-                
+
             expanded = {
                 'owner': current.getOwner()['id'],
                 'type': current.getType(),
