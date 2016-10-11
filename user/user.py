@@ -74,3 +74,5 @@ class user:
             self.id = id
         else:
             raise ValueError('User Id must be greater than 0.')
+    def getId(self):
+        return self.id
