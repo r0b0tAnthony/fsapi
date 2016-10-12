@@ -12,13 +12,13 @@ class user:
         'deleteACLSchema': 128
     }
 
-    def __init__(self, username, permissions, password = None, idnum = None):
+    def __init__(self, username, permissions, password = None, user_id = None):
         self.setUsername(username)
         self.setPermissions(permissions)
         if password != None:
             self.setPassword(password)
-        if idnum != None:
-            self.setId(idnum)
+        if user_id != None:
+            self.setId(user_id)
 
     def setUsername(self, username):
         if len(username) > 3:
