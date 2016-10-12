@@ -4,12 +4,14 @@ import pprint
 import posixpath as path
 
 class aclSchema:
-    def __init__(self, name, dacl):
+    def __init__(self, name, dacl, schema_id = None):
         self.setName(name)
         self.schema = {}
         self.setDACL(dacl, self.schema)
         self.expanded_schema = {}
         self.setExpandedDACL(self.schema, self.expanded_schema)
+        if schema_id is not None:
+            self.setId(schema_id)
 
     def setName(self, name):
         if len(name) > 3:
@@ -23,6 +25,13 @@ class aclSchema:
 
     def getName(self):
         return self.name
+
+    def setId(self, schema_id):
+        if schema_id > 0:
+            self.id = schema_id
+
+    def getId(self):
+        return self.id
 
     def setDACL(self, dacl, schema):
         for key in dacl:
