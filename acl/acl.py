@@ -190,19 +190,25 @@ class ACL:
     @staticmethod
     def GetExpandedDACL(dacl, schema, acl_path = None):
         for key in dacl:
-            current = dacl[key]['acl']
-            pprint.pprint(current.getOwner())
-            expanded_acl = current.getExpandedACL()
+            current = dacl[key]
+            expanded_acl = ACL.getExpandedACL(current['acl'])
             if len(expanded_acl) < 1:
                 continue
 
             expanded = {
                 'owner': current['owner']['id'],
                 'type': current['type'],
-                'ignore_inheritance': current['ignore_inheritance'],
-                'skip': current['skip'],
-                'acl': current['acl']
+                'acl': expanded_acl
             }
+            try:
+                expanded['ignore_inheritance'] = current['ignore_inheritance']
+            except KeyError:
+                pass
+            try:
+                expanded['skip'] = expanded['skip']
+            except KeyError:
+                pass
+
             if key == '__DEFAULT__':
                 regex_key = '[a-zA-Z0-9_\-\.]+'
             else:
@@ -215,7 +221,7 @@ class ACL:
                 schema[key] = expanded
 
             try:
-                self.GetExpandedDACL(dacl[key]['children'], schema, key)
+                ACL.GetExpandedDACL(dacl[key]['children'], schema, key)
             except KeyError as e:
                 if 'children' in str(e):
                     pass

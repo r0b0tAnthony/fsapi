@@ -8,3 +8,6 @@ perm_obj = json.load(perm_fo)
 pprint.pprint(perm_obj)
 ACL.ValidateDACLSchema(perm_obj)
 pprint.pprint(perm_obj)
+expanded_schema = {}
+ACL.GetExpandedDACL(perm_obj, expanded_schema)
+pprint.pprint(expanded_schema)
