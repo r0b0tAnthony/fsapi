@@ -2,6 +2,7 @@ import win32api
 import win32security
 import pywintypes
 import ntsecuritycon as con
+import posixpath as path
 
 class ACL:
     #translation to ntsecuritycon constants
@@ -59,13 +60,6 @@ class ACL:
         'INHERITED_ACE': win32security.INHERITED_ACE
     }
 
-    def __init__(self, acl_type, owner, acl, ignore_inheritance = False, skip = False):
-        self.setType(acl_type)
-        self.setOwner(owner)
-        self.setACL(acl)
-        self.ignore_inheritance = ignore_inheritance
-        self.skip = skip
-
     def setType(self, acl_type):
         if acl_type not in ['file', 'folder', 'all']:
             raise ValueError('DACL type must be either file, folder, or all.')
@@ -88,22 +82,47 @@ class ACL:
     def getOwner(self):
         return self.owner
 
-    def setACL(self, acl):
+    @staticmethod
+    def ValidateACL(acl):
         for x in range(len(acl)):
-            self.validateACE(acl[x])
-        self.acl = acl
+            acl[x] = ACL.ValidateACE(acl[x])
+
+        return acl
 
     def getACL(self):
         return self.acl
 
-    def validateACE(self, ace):
+    @staticmethod
+    def ValidateDACLSchema(dacl):
+        if '__DEFAULT__' not in dacl:
+            raise KeyError('Each level of a DACL schema must contain a __DEFAULT__ entry')
+
+        for key in dacl:
+            currentacl = dacl[key]
+            try:
+                currentacl['owner']['id'] = ACL.GetAccountId(currentacl['owner']['name'], currentacl['owner']['domain'])
+            except KeyError:
+                raise KeyError("%s DACL owner propety is invalid" % key)
+
+            currentacl['acl'] = ACL.ValidateACL(currentacl['acl'])
+            try:
+                if len(currentacl['children']) > 0:
+                    ACL.ValidateDACLSchema(currentacl['children'])
+            except KeyError as e:
+                if 'children' in str(e):
+                    pass
+                else:
+                    raise e
+
+    @staticmethod
+    def ValidateACE(ace):
         try:
-            ace['account']['id'] = self.getAccountId(ace['account']['name'], ace['account']['domain'])
+            ace['account']['id'] = ACL.GetAccountId(ace['account']['name'], ace['account']['domain'])
         except KeyError:
             raise KeyError('ACE account property is invalid.')
 
         try:
-            ace['mask_bits'] = self.getAccessMaskBits(ace['mask'])
+            ace['mask_bits'] = ACL.GetAccessMaskBits(ace['mask'])
         except KeyError:
             raise KeyError('ACE mask property is missing')
 
@@ -114,14 +133,18 @@ class ACL:
             raise KeyError('ACE type property is missing.')
 
         try:
-            ace['inherit_bits'] = self.getInheritBits(ace['inherit'])
+            ace['inherit_bits'] = ACL.GetInheritBits(ace['inherit'])
         except KeyError:
             ace['inherit_bits'] = 0
             pass
-    def getExpandedACL(self):
+
+        return ace
+
+    @staticmethod
+    def getExpandedACL(acl):
         expanded_acl = []
-        for x in range(len(self.acl)):
-            current_acl = self.acl[x]
+        for x in range(len(acl)):
+            current_acl = acl[x]
             expanded_acl.append({
                 'account_id': current_acl['account']['id'],
                 'mask_bits': current_acl['mask_bits'],
@@ -137,15 +160,15 @@ class ACL:
     def getSkip(self):
         return self.skip
     @staticmethod
-    def getAccountId(name, domain):
-        return str(ACL.getAccount(name, domain)[0])[6:]
+    def GetAccountId(name, domain):
+        return str(ACL.GetAccount(name, domain)[0])[6:]
 
     @staticmethod
-    def getAccount(name, domain):
+    def GetAccount(name, domain):
         return win32security.LookupAccountName(domain, name)
 
     @staticmethod
-    def getAccessMaskBits(masks):
+    def GetAccessMaskBits(masks):
         bits = 0
         for mask in masks:
             try:
@@ -153,8 +176,9 @@ class ACL:
             except KeyError:
                 raise ValueError("ACE Mask does not exist: %s" % mask)
         return bits
+
     @staticmethod
-    def getInheritBits(flags):
+    def GetInheritBits(flags):
         bits = 0
         for flag in flags:
             try:
@@ -162,3 +186,38 @@ class ACL:
             except KeyError:
                 raise ValueError("ACE Inherit flag does not exist: %s" % flag)
         return bits
+
+    @staticmethod
+    def GetExpandedDACL(dacl, schema, acl_path = None):
+        for key in dacl:
+            current = dacl[key]['acl']
+            pprint.pprint(current.getOwner())
+            expanded_acl = current.getExpandedACL()
+            if len(expanded_acl) < 1:
+                continue
+
+            expanded = {
+                'owner': current['owner']['id'],
+                'type': current['type'],
+                'ignore_inheritance': current['ignore_inheritance'],
+                'skip': current['skip'],
+                'acl': current['acl']
+            }
+            if key == '__DEFAULT__':
+                regex_key = '[a-zA-Z0-9_\-\.]+'
+            else:
+                regex_key = key
+
+            if acl_path is not None:
+                path_key = path.join(acl_path, key)
+                schema[path_key] = expanded
+            else:
+                schema[key] = expanded
+
+            try:
+                self.GetExpandedDACL(dacl[key]['children'], schema, key)
+            except KeyError as e:
+                if 'children' in str(e):
+                    pass
+                else:
+                    raise e
