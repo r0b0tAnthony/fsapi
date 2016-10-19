@@ -161,8 +161,7 @@ class ACL:
         return self.skip
     @staticmethod
     def GetAccountId(name, domain):
-        #return str(ACL.GetAccount(name, domain)[0])[6:]
-        return 'S-MEOW-WOOF'
+        return str(ACL.GetAccount(name, domain)[0])[6:]
 
     @staticmethod
     def GetAccount(name, domain):
