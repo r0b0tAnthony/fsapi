@@ -26,18 +26,26 @@ def ValidateUserPermissions(value):
     if len(diff) > 0:
         raise ValueError("Invalid user permissions specified: %s" % diff)
 
-def ValidateProjectPaths(value):
-    print 'Running ValidateProjectPaths'
-    pprint.pprint(value)
+def ValidateProjectPaths(paths):
     try:
-        value['windows'] = posixpath.normpath(value['windows'].replace('\\', '/'))
+        paths['linux'] = posixpath.abspath(paths['linux'])
     except KeyError:
-        raise KeyError('Project path property requires windows property.')
+        raise KeyError('Project paths property is missing linux propety.')
+
+    try:
+        paths['darwin'] = posixpath.abspath(paths['darwin'])
+    except KeyError:
+        raise KeyError('Project paths property is missing darwin property.')
+
+    try:
+        paths['windows'] = posixpath.normpath(paths['windows'].replace('\\', '/'))
+    except KeyError:
+        raise KeyError('Project paths property is missing windows property.')
 
 class Schema(MongoModel):
     title = fields.CharField(min_length = 3, validators=[ValidateName], required = True)
     schema = fields.DictField(required = True, validators=[ACL.ValidateDACLSchema])
-    expanded_schema = fields.DictField(required = True)
+    expanded_schema = fields.DictField()
     modified = fields.DateTimeField(required = True)
 
     class Meta:
@@ -53,10 +61,10 @@ class User(MongoModel):
 
 class Project(MongoModel):
     title = fields.CharField(min_length=3, validators=[ValidateName], required = True)
-    users = fields.ListField(required = True)
+    users = fields.ReferenceField(User, required = True)
     acl_schema = fields.ReferenceField(Schema, required = True)
     paths = fields.DictField(validators=[ValidateProjectPaths], required = True)
-    acl_expanded = fields.DictField(required = True)
+    acl_expanded = fields.DictField()
 
     class Meta:
         connection_alias = 'fsapi-app'

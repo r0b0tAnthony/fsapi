@@ -2,7 +2,7 @@ import win32api
 import win32security
 import pywintypes
 import ntsecuritycon as con
-import posixpath as path
+import posixpath
 
 class ACL:
     #translation to ntsecuritycon constants
@@ -161,7 +161,8 @@ class ACL:
         return self.skip
     @staticmethod
     def GetAccountId(name, domain):
-        return str(ACL.GetAccount(name, domain)[0])[6:]
+        #return str(ACL.GetAccount(name, domain)[0])[6:]
+        return 'S-MEOW-WOOF'
 
     @staticmethod
     def GetAccount(name, domain):
@@ -186,6 +187,19 @@ class ACL:
             except KeyError:
                 raise ValueError("ACE Inherit flag does not exist: %s" % flag)
         return bits
+
+    @staticmethod
+    def GetProjectSchema(expanded, paths):
+        expanded_schema = {}
+        for platform in paths:
+            expanded_schema[platform] = {}
+            for key in expanded:
+                schema = expanded[key]
+                path_key = posixpath.join(paths[platform], key)
+                expanded_key = "^%s$" % path_key
+                expanded_schema[platform][expanded_key] = schema
+
+        return expanded_schema
 
     @staticmethod
     def GetExpandedDACL(dacl, schema, acl_path = None):
@@ -215,7 +229,7 @@ class ACL:
                 regex_key = key
 
             if acl_path is not None:
-                path_key = path.join(acl_path, key)
+                path_key = posixpath.join(acl_path, key)
                 schema[path_key] = expanded
             else:
                 schema[key] = expanded
