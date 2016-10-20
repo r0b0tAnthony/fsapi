@@ -54,18 +54,37 @@ class Schema(MongoModel):
         connection_alias = 'fsapi-app'
 
 class User(MongoModel):
-    username = fields.CharField(min_length = 3, validators = [ValidateName], required = True)
+    username = fields.CharField(min_length = 3, validators = [ValidateName], required = True, unique = True)
     permissions = fields.ListField(validators = [ValidateUserPermissions], required = True)
     password = fields.CharField(min_length = 8, required = True)
-    auth_b64 = fields.CharField(min_length = 11)
-
+    auth_b64 = fields.CharField(min_length = 11, required = True, unique = True)
+    valid_permissions = [
+        'createUser',
+        'deleteUser',
+        'createProject',
+        'deleteProject',
+        'createFile',
+        'setACL',
+        'createACLSchema',
+        'deleteACLSchema'
+    ]
     class Meta:
         connection_alias = 'fsapi-app'
 
     def clean(self):
-        auth = base64.b64encode("%s:%s" % (self.username, self.password))
+        auth = User.GetAuthBase64(self.username, self.password)
         if self.auth_b64 != auth:
             raise pymodm_errors.ValidationError('auth_b64 must be a base64 encoded string of username:password.')
+    @staticmethod
+    def GetAuthBase64(username, password):
+        return base64.b64encode("%s:%s" % (username, password))
+
+    def to_dict(self):
+        return {
+            'username': self.username,
+            'permissions': self.permissions,
+            '_id': str(self._id)
+        }
 
 class Project(MongoModel):
     title = fields.CharField(min_length=3, validators=[ValidateName], required = True)
