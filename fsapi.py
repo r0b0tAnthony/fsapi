@@ -4,6 +4,8 @@ from serve_swagger import SpecServer
 from waitress import serve
 from pymodm import connect
 from resources.models import User, Project, Schema
+from bson.objectid import ObjectId
+from bson.errors import InvalidId
 import pprint
 import json
 
@@ -46,19 +48,80 @@ def RequireJson(**request_handler_args):
         if 'application/json' not in req.content_type:
             raise falcon.HTTPUnsupportedMediaType('This API only supports requests encoded as JSON.')
 
-def createUser(**request_handler_args):
+def CreateUser(**request_handler_args):
     authUser(request_handler_args['req'], request_handler_args['resp'], ['createUser'])
     doc = request_handler_args['req'].context['doc']
     try:
-        user = User(username = doc['username'], password = doc['password'], permissions = doc['permissions'], auth_b64 = User.GetAuthBase64(doc['username'], doc['password'])).save()
-        request_handler_args['req'].context['result'] = user.to_dict()
+        user = User(username = doc['username'], password = doc['password'], permissions = doc['permissions'], auth_b64 = User.GetAuthBase64(doc['username'], doc['password']))
     except KeyError as e:
         raise falcon.HTTPBadRequest('Invalid User Object', "User JSON Object is invalid. %s" % e)
+    else:
+        try:
+            user.save()
+            request_handler_args['req'].context['result'] = user.to_dict()
+        except User.ValidationError as e:
+            raise falcon.HTTPBadRequest("Validation Error", e.message)
+        except User.DuplicateKeyError as e:
+            existing_user = User.objects.get({"username": user.username})
+            raise falcon.HTTPConflict("Conflict", {"message":"User with username '%s' already exists." % user.username, "user": existing_user.to_dict()})
+
+def UpdateUser(**request_handler_args):
+    authUser(request_handler_args['req'], request_handler_args['resp'], ['createUser'])
+    doc = request_handler_args['req'].context['doc']
+    try:
+        user = User.objects.get({"_id": ObjectId(request_handler_args['uri_fields']['id'])})
+    except InvalidId as e:
+        raise falcon.HTTPBadRequest('Bad Request', str(e))
+    except User.DoesNotExist:
+        raise falcon.HTTPNotFound()
+    else:
+        user.username = doc['username']
+        user.password = doc['password']
+        user.permissions = doc['permissions']
+        user.auth_b64 = User.GetAuthBase64(doc['username'], doc['password'])
+        try:
+            user.save()
+        except User.ValidationError as e:
+            raise falcon.HTTPBadRequest("Validation Error", e.message)
+        except User.DuplicateKeyError as e:
+            existing_user = User.objects.get({"username": user.username})
+            raise falcon.HTTPConflict("Conflict", {"message":"User with username '%s' already exists." % user.username, "user": existing_user.to_dict()})
+        else:
+            request_handler_args['req'].context['result'] = user.to_dict()
+
+def GetUsers(**request_handler_args):
+    users = []
+    for user in User.objects.all():
+        users.append(user.to_dict())
+    request_handler_args['req'].context['result'] = users
+
+def GetUser(**request_handler_args):
+    try:
+        user = User.objects.get({"_id": ObjectId(request_handler_args['uri_fields']['id'])})
+    except InvalidId as e:
+        raise falcon.HTTPBadRequest('Bad Request', str(e))
+    except User.DoesNotExist:
+        raise falcon.HTTPNotFound()
+    else:
+        request_handler_args['req'].context['result'] = user.to_dict()
+
+def DeleteUser(**request_handler_args):
+    authUser(request_handler_args['req'], request_handler_args['resp'], ['deleteUser'])
+    try:
+        user = User.objects.get({"_id": ObjectId(request_handler_args['uri_fields']['id'])})
+    except InvalidId as e:
+        raise falcon.HTTPBadRequest('Bad Request', str(e))
+    except User.DoesNotExist:
+        raise falcon.HTTPNotFound()
+    else:
+        user.delete()
+
 
 def createFile(**request_handler_args):
         resp = request_handler_args['resp']
         resp.status = falcon.HTTP_200
         resp.body = ("%s HELP HELP" % resp.body)
+
 def authUser(req, resp, permissions):
     authHeader = req.get_header('Authorization')
     if authHeader == None:
@@ -84,10 +147,11 @@ def im_a_teapot(**request_handler_args):
     resp.status = status.HTTP_IM_A_TEAPOT
 
 operation_handlers = {
-    'createUser':                   [RequireJson, ProcessJsonReq, createUser, ProcessJsonResp],
-    'updateUser':                   [not_found],
-    'deleteUser':                   [not_found],
-    'getUsers':                     [not_found],
+    'createUser':                   [RequireJson, ProcessJsonReq, CreateUser, ProcessJsonResp],
+    'updateUser':                   [RequireJson, ProcessJsonReq, UpdateUser, ProcessJsonResp],
+    'deleteUser':                   [DeleteUser, ProcessJsonResp],
+    'getUser':                      [GetUser, ProcessJsonResp],
+    'getUsers':                     [GetUsers, ProcessJsonResp],
     'getProjects':                  [not_found],
     'createProject':                [not_found],
     'getProject':                   [not_found],
