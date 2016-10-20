@@ -4,6 +4,7 @@ from pymongo.write_concern import WriteConcern
 from pymongo import errors as pymongo_errors
 from pymodm import MongoModel, fields
 from pymodm import errors as pymodm_errors
+import datetime
 import posixpath
 import pprint
 import base64
@@ -46,10 +47,13 @@ def ValidateProjectPaths(paths):
         raise pymodm_errors.ValidationError('Project paths property is missing windows property.')
 
 class Schema(MongoModel):
-    title = fields.CharField(min_length = 3, validators=[ValidateName], required = True)
+    name = fields.CharField(min_length = 3, validators=[ValidateName], required = True)
     schema = fields.DictField(required = True, validators=[ACL.ValidateDACLSchema])
     expanded_schema = fields.DictField()
-    modified = fields.DateTimeField(required = True)
+    modified = fields.DateTimeField(required = True, default = datetime.datetime.now())
+
+    ValidationError = pymodm_errors.ValidationError
+    DuplicateKeyError = pymongo_errors.DuplicateKeyError
 
     class Meta:
         connection_alias = 'fsapi-app'

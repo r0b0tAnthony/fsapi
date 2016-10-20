@@ -4,6 +4,7 @@ from serve_swagger import SpecServer
 from waitress import serve
 from pymodm import connect
 from resources.models import User, Project, Schema
+from resources.acl import ACL
 from bson.objectid import ObjectId
 from bson.errors import InvalidId
 import pprint
@@ -116,6 +117,25 @@ def DeleteUser(**request_handler_args):
     else:
         user.delete()
 
+def createACLSchema(**request_handler_args):
+    authUser(request_handler_args['req'], request_handler_args['resp'], ['createSchema'])
+    doc = request_handler_args['req'].context['doc']
+    try:
+        schema = Schema(name = doc['name'], schema = doc['schema'])
+    except KeyError as e:
+        raise falcon.HTTPBadRequest('Invalid Schema Object', "Schema JSON Object is invalid. %s" % e)
+    else:
+        try:
+            schema.save()
+        except Schema.ValidationError as e:
+            raise falcon.HTTPBadRequest("Validation Error", e.message)
+        else:
+            expanded_schema = {}
+            ACL.GetExpandedDACL(schema.schema, expanded_schema)
+            schema.expanded_schema = expanded_schema
+            schema.save()
+            
+
 
 def createFile(**request_handler_args):
         resp = request_handler_args['resp']
@@ -164,7 +184,7 @@ operation_handlers = {
     'getProjectUsers':              [not_found],
     'updateProjectUsers':           [not_found],
     'deleteProjectUser':            [not_found],
-    'createACLSchema':              [not_found],
+    'createACLSchema':              [RequireJson, ProcessJsonReq, CreateACLSchema, ProcessJsonResp],
     'getACLSchemas':                [not_found],
     'getACLSchema':                 [not_found],
     'updateACLSchema':              [not_found],
