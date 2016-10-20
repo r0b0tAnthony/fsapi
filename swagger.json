@@ -2,7 +2,8 @@
     "swagger": "2.0",
     "info": {
         "version": "0.1.3",
-        "title": "File Creation Service"
+        "title": "File Creation Service",
+        "description": "**User Name and Password**\n* User Name: `user`\n* Password: `pass`"
     },
     "basePath": "/api",
     "schemes": [
@@ -22,6 +23,7 @@
     "paths": {
         "/users": {
             "post": {
+                "tags": ["Users"],
                 "operationId": "createUser",
                 "description": "Creates `user` object.\nDoes **require** createuser permission.\n",
                 "parameters": [
@@ -55,6 +57,7 @@
                 ]
             },
             "get": {
+                "tags": ["Users"],
                 "operationId": "getUsers",
                 "description": "Gets all registered `User` objects.\n",
                 "responses": {
@@ -77,6 +80,7 @@
         },
         "/users/{id}": {
             "get": {
+                "tags": ["Users"],
                 "description": "Get specified `User` object",
                 "operationId": "getUser",
                 "responses": {
@@ -97,6 +101,7 @@
                 ]
             },
             "delete": {
+                "tags": ["Users"],
                 "description": "Delete specified `User` object",
                 "operationId": "deleteUser",
                 "responses": {
@@ -114,6 +119,7 @@
                 ]
             },
             "put": {
+                "tags": ["Users"],
                 "description": "Update specified `User` object",
                 "operationId": "updateUser",
                 "parameters": [
@@ -153,6 +159,7 @@
         },
         "/projects": {
             "get": {
+                "tags": ["Projects"],
                 "description": "Get registered `Project` objects",
                 "operationId": "getProjects",
                 "responses": {
@@ -173,6 +180,7 @@
                 ]
             },
             "post": {
+                "tags": ["Projects"],
                 "description": "Create new `Project` object",
                 "operationId": "createProject",
                 "parameters": [
@@ -206,6 +214,7 @@
         },
         "/projects/{id}": {
             "get": {
+                "tags": ["Projects"],
                 "description": "Get specified `Project` Object",
                 "operationId": "getProject",
                 "parameters": [
@@ -232,6 +241,7 @@
                 ]
             },
             "put": {
+                "tags": ["Projects"],
                 "operationId": "updateProject",
                 "description": "Update specified `Project` Object",
                 "parameters": [
@@ -261,6 +271,7 @@
                 ]
             },
             "delete": {
+                "tags": ["Projects"],
                 "operationId": "deleteProject",
                 "description": "Delete specified `Project` Object",
                 "parameters": [
@@ -289,6 +300,7 @@
         },
         "/projects/{id}/file": {
             "post": {
+                "tags": ["Projects"],
                 "description": "Create file/folder in storage",
                 "operationId": "createFile",
                 "parameters": [
@@ -323,6 +335,7 @@
                 ]
             },
             "get": {
+                "tags": ["Projects"],
                 "description": "Get Info On Specified File/Folder",
                 "operationId": "getFile",
                 "parameters": [
@@ -359,6 +372,7 @@
         },
         "/projects/{id}/file/acl": {
             "post": {
+                "tags": ["Projects"],
                 "description": "Set ACL of File/Folder",
                 "operationId": "setACL",
                 "parameters": [
@@ -396,6 +410,7 @@
                 }
             },
             "get": {
+                "tags": ["Projects"],
                 "description": "Get ACL of File/Folder",
                 "operationId": "getACL",
                 "parameters": [
@@ -432,6 +447,7 @@
         },
         "/projects/{id}/user": {
             "get": {
+                "tags": ["Projects", "Users"],
                 "description": "Get `User` Objects Associated With Specified `Project` Object",
                 "operationId": "getProjectUsers",
                 "responses": {
@@ -452,6 +468,7 @@
                 ]
             },
             "put": {
+                "tags": ["Projects", "Users"],
                 "description": "Add `User` Object to Specified `Project` Object",
                 "operationId": "updateProjectUsers",
                 "parameters": [
@@ -496,6 +513,7 @@
         },
         "/projects/{id}/user/{userid}": {
             "delete": {
+                "tags": ["Projects", "Users"],
                 "description": "Delete Specified `User` from Specified `Project`",
                 "operationId": "deleteProjectUser",
                 "parameters": [
@@ -531,6 +549,7 @@
         },
         "/acl/schema": {
             "post": {
+                "tags": ["ACLSchema"],
                 "description": "Create New `ACLSchema`",
                 "operationId": "createACLSchema",
                 "parameters": [
@@ -561,6 +580,7 @@
                 ]
             },
             "get": {
+                "tags": ["ACLSchema"],
                 "description": "Get Registered `ACLSchema` Objects",
                 "operationId": "getACLSchemas",
                 "security": [
@@ -583,6 +603,7 @@
         },
         "/acl/schema/{id}": {
             "get": {
+                "tags": ["ACLSchema"],
                 "description": "Get Specified `ACLSchema` Object",
                 "operationId": "getACLSchema",
                 "responses": {
@@ -600,6 +621,7 @@
                 ]
             },
             "put": {
+                "tags": ["ACLSchema"],
                 "description": "Update specified `ACLSchema`",
                 "operationId": "updateACLSchema",
                 "parameters": [
@@ -630,6 +652,7 @@
                 }
             },
             "delete": {
+                "tags": ["ACLSchema"],
                 "description": "Delete specified `ACLSchema` Object",
                 "operationId": "deleteACLSchema",
                 "responses": {
