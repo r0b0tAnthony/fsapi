@@ -91,7 +91,7 @@ class User(MongoModel):
 
 class Project(MongoModel):
     title = fields.CharField(min_length=3, validators=[ValidateName], required = True)
-    users = fields.ReferenceField(User, required = True)
+    users = fields.ListField(fields.ReferenceField(User, on_delte = PULL))
     acl_schema = fields.ReferenceField(Schema, required = True)
     paths = fields.DictField(validators=[ValidateProjectPaths], required = True)
     acl_expanded = fields.DictField()
