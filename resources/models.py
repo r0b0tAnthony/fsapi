@@ -1,6 +1,7 @@
 import re
 from acl import ACL
 from pymongo.write_concern import WriteConcern
+from pymongo import errors as pymongo_errors
 from pymodm import MongoModel, fields
 from pymodm import errors as pymodm_errors
 import posixpath
@@ -68,6 +69,8 @@ class User(MongoModel):
         'createACLSchema',
         'deleteACLSchema'
     ]
+    ValidationError = pymodm_errors.ValidationError
+    DuplicateKeyError = pymongo_errors.DuplicateKeyError
     class Meta:
         connection_alias = 'fsapi-app'
 
