@@ -58,6 +58,13 @@ class Schema(MongoModel):
     class Meta:
         connection_alias = 'fsapi-app'
 
+    def clean(self):
+        self.expanded_schema = {}
+        ACL.GetExpandedDACL(self.schema, self.expanded_schema)
+
+    def to_dict(self):
+        return {"name": self.name, "schema": self.schema, "modified": self.modified.isoformat()}
+
 class User(MongoModel):
     username = fields.CharField(min_length = 3, validators = [ValidateName], required = True, unique = True)
     permissions = fields.ListField(validators = [ValidateUserPermissions], required = True)
@@ -95,7 +102,7 @@ class User(MongoModel):
 
 class Project(MongoModel):
     title = fields.CharField(min_length=3, validators=[ValidateName], required = True)
-    users = fields.ListField(fields.ReferenceField(User, on_delte = PULL))
+    users = fields.ListField(fields.ReferenceField(User, on_delete = fields.ReferenceField.PULL))
     acl_schema = fields.ReferenceField(Schema, required = True)
     paths = fields.DictField(validators=[ValidateProjectPaths], required = True)
     acl_expanded = fields.DictField()
