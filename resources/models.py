@@ -63,7 +63,12 @@ class Schema(MongoModel):
         ACL.GetExpandedDACL(self.schema, self.expanded_schema)
 
     def to_dict(self):
-        return {"name": self.name, "schema": self.schema, "modified": self.modified.isoformat()}
+        return {
+                "name": self.name,
+                "schema": self.schema,
+                "modified": self.modified.isoformat(),
+                "_id": str(self._id)
+        }
 
 class User(MongoModel):
     username = fields.CharField(min_length = 3, validators = [ValidateName], required = True, unique = True)
