@@ -9,6 +9,7 @@ from bson.objectid import ObjectId
 from bson.errors import InvalidId
 import pprint
 import json
+import datetime
 
 def ProcessJsonResp(**request_handler_args):
     if 'result' not in request_handler_args['req'].context:
@@ -147,6 +148,26 @@ def GetACLSchema(**request_handler_args):
         raise falcon.HTTPNotFound()
     else:
         request_handler_args['req'].context['result'] = schema.to_dict()
+
+def UpdateACLSchema(**request_handler_args):
+    authUser(request_handler_args['req'], request_handler_args['resp'], ['createACLSchema'])
+    doc = request_handler_args['req'].context['doc']
+    try:
+        schema = Schema.objects.get({"_id": ObjectId(request_handler_args['uri_fields']['id'])})
+    except InvalidId as e:
+        raise falcon.HTTPBadRequest('Bad Request', str(e))
+    except Schema.DoesNotExist:
+        raise falcon.HTTPNotFound()
+    else:
+        schema.name = doc['name']
+        schema.schema = doc['schema']
+        schema.modified = datetime.datetime.now()
+        try:
+            schema.save()
+        except schema.ValidationError as e:
+            raise falcon.HTTPBadRequest("Validation Error", e.message)
+        else:
+            request_handler_args['req'].context['result'] = schema.to_dict()
 
 def createFile(**request_handler_args):
         resp = request_handler_args['resp']
