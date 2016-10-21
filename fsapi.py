@@ -138,6 +138,16 @@ def GetACLSchemas(**request_handler_args):
         schemas.append(schema.to_dict())
     request_handler_args['req'].context['result'] = schemas
 
+def GetACLSchema(**request_handler_args):
+    try:
+        schema = Schema.objects.get({"_id": ObjectId(request_handler_args['uri_fields']['id'])})
+    except InvalidId as e:
+        raise falcon.HTTPBadRequest('Bad Request', str(e))
+    except Schema.DoesNotExist:
+        raise falcon.HTTPNotFound()
+    else:
+        request_handler_args['req'].context['result'] = schema.to_dict()
+
 def createFile(**request_handler_args):
         resp = request_handler_args['resp']
         resp.status = falcon.HTTP_200
@@ -187,8 +197,8 @@ operation_handlers = {
     'deleteProjectUser':            [not_found],
     'createACLSchema':              [RequireJson, ProcessJsonReq, CreateACLSchema, ProcessJsonResp],
     'getACLSchemas':                [GetACLSchemas, ProcessJsonResp],
-    'getACLSchema':                 [not_found],
-    'updateACLSchema':              [not_found],
+    'getACLSchema':                 [GetACLSchema, ProcessJsonResp],
+    'updateACLSchema':              [RequireJson, ProcessJsonReq, UpdateACLSchema, ProcessJsonResp],
     'deleteACLSchema':              [not_found],
 }
 connect("mongodb://localhost:27017/fsapi", alias='fsapi-app')
