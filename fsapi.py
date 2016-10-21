@@ -132,6 +132,11 @@ def CreateACLSchema(**request_handler_args):
         else:
             request_handler_args['req'].context['result'] = schema.to_dict()
 
+def GetACLSchemas(**request_handler_args):
+    schemas = []
+    for schema in Schema.objects.all():
+        schemas.append(schema.to_dict())
+    request_handler_args['req'].context['result'] = schemas
 
 def createFile(**request_handler_args):
         resp = request_handler_args['resp']
@@ -181,7 +186,7 @@ operation_handlers = {
     'updateProjectUsers':           [not_found],
     'deleteProjectUser':            [not_found],
     'createACLSchema':              [RequireJson, ProcessJsonReq, CreateACLSchema, ProcessJsonResp],
-    'getACLSchemas':                [not_found],
+    'getACLSchemas':                [GetACLSchemas, ProcessJsonResp],
     'getACLSchema':                 [not_found],
     'updateACLSchema':              [not_found],
     'deleteACLSchema':              [not_found],
