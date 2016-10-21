@@ -117,8 +117,8 @@ def DeleteUser(**request_handler_args):
     else:
         user.delete()
 
-def createACLSchema(**request_handler_args):
-    authUser(request_handler_args['req'], request_handler_args['resp'], ['createSchema'])
+def CreateACLSchema(**request_handler_args):
+    authUser(request_handler_args['req'], request_handler_args['resp'], ['createACLSchema'])
     doc = request_handler_args['req'].context['doc']
     try:
         schema = Schema(name = doc['name'], schema = doc['schema'])
@@ -130,11 +130,7 @@ def createACLSchema(**request_handler_args):
         except Schema.ValidationError as e:
             raise falcon.HTTPBadRequest("Validation Error", e.message)
         else:
-            expanded_schema = {}
-            ACL.GetExpandedDACL(schema.schema, expanded_schema)
-            schema.expanded_schema = expanded_schema
-            schema.save()
-            
+            request_handler_args['req'].context['result'] = schema.to_dict()
 
 
 def createFile(**request_handler_args):
