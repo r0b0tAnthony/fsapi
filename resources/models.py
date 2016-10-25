@@ -2,7 +2,7 @@ import re
 from acl import ACL
 from pymongo.write_concern import WriteConcern
 from pymongo import errors as pymongo_errors
-from pymodm import MongoModel, fields
+from pymodm import MongoModel, fields, context_managers
 from pymodm import errors as pymodm_errors
 import datetime
 import posixpath
@@ -106,11 +106,29 @@ class User(MongoModel):
         }
 
 class Project(MongoModel):
-    title = fields.CharField(min_length=3, validators=[ValidateName], required = True)
-    users = fields.ListField(fields.ReferenceField(User, on_delete = fields.ReferenceField.PULL))
-    acl_schema = fields.ReferenceField(Schema, required = True)
+    name = fields.CharField(min_length=3, validators=[ValidateName], required = True)
+    users = fields.ListField(fields.ReferenceField(User, on_delete = fields.ReferenceField.PULL), required = True)
+    acl_schema = fields.ReferenceField(Schema, required = True, on_delete = fields.ReferenceField.DENY)
     paths = fields.DictField(validators=[ValidateProjectPaths], required = True)
     acl_expanded = fields.DictField()
 
+    ValidationError = pymodm_errors.ValidationError
+    DuplicateKeyError = pymongo_errors.DuplicateKeyError
+
     class Meta:
         connection_alias = 'fsapi-app'
+
+    def clean(self):
+        self.acl_expanded = ACL.GetProjectSchema(self.acl_schema.expanded_schema, self.paths)
+
+    def to_dict(self):
+        user_ids = []
+        for x in range(len(self.users)):
+            user_ids.append(str(self.users[x]._id))
+        return {
+            'name': self.name,
+            'users': user_ids,
+            'acl_schema': str(self.acl_schema._id),
+            'paths': self.paths,
+            'acl_expanded': self.acl_expanded
+        }

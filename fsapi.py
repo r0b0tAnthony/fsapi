@@ -168,6 +168,49 @@ def UpdateACLSchema(**request_handler_args):
             raise falcon.HTTPBadRequest("Validation Error", e.message)
         else:
             request_handler_args['req'].context['result'] = schema.to_dict()
+def DeleteACLSchema(**request_handler_args):
+    authUser(request_handler_args['req'], request_handler_args['resp'], ['deleteACLSchema'])
+    try:
+        schema = Schema.objects.get({"_id": ObjectId(request_handler_args['uri_fields']['id'])})
+    except InvalidId as e:
+        raise falcon.HTTPBadRequest('Bad Request', str(e))
+    except Schema.DoesNotExist:
+        raise falcon.HTTPNotFound()
+    else:
+        schema.delete()
+
+def CreateProject(**request_handler_args):
+    authUser(request_handler_args['req'], request_handler_args['resp'], ['createProject'])
+    doc = request_handler_args['req'].context['doc']
+    try:
+        user_ids = []
+        for x in range(len(doc['users'])):
+            user_ids.append(ObjectId(doc['users'][x]))
+    except InvalidId as e:
+        raise falcon.HTTPBadRequest('Bad Request', str(e))
+
+    try:
+        project_users = User.objects.raw({'_id': { '$in': user_ids} })
+    except User.DoesNotExist:
+        raise falcon.HTTPNotFound()
+
+    try:
+        project_schema = Schema.objects.get({'_id': ObjectId(doc['acl_schema'])})
+    except InvalidId as e:
+        raise falcon.HTTPBadRequest('Bad Request', str(e))
+
+    try:
+        project = Project(name = doc['name'], acl_schema = project_schema, paths = doc['paths'], users = project_users)
+    except KeyError as e:
+        raise falcon.HTTPBadRequest('Invalid Schema Object', "Schema JSON Object is invalid. %s" % e)
+    else:
+        try:
+            project.save()
+        except project.ValidationError as e:
+            raise falcon.HTTPBadRequest("Validation Error", e.message)
+        else:
+            #pprint.pprint(project)
+            request_handler_args['req'].context['result'] = project.to_dict()
 
 def createFile(**request_handler_args):
         resp = request_handler_args['resp']
@@ -205,7 +248,7 @@ operation_handlers = {
     'getUser':                      [GetUser, ProcessJsonResp],
     'getUsers':                     [GetUsers, ProcessJsonResp],
     'getProjects':                  [not_found],
-    'createProject':                [not_found],
+    'createProject':                [RequireJson, ProcessJsonReq,CreateProject, ProcessJsonResp],
     'getProject':                   [not_found],
     'updateProject':                [not_found],
     'deleteProject':                [not_found],
