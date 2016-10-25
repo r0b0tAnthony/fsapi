@@ -126,6 +126,7 @@ class Project(MongoModel):
         for x in range(len(self.users)):
             user_ids.append(str(self.users[x]._id))
         return {
+            'id': str(self._id),
             'name': self.name,
             'users': user_ids,
             'acl_schema': str(self.acl_schema._id),

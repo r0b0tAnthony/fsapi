@@ -212,6 +212,12 @@ def CreateProject(**request_handler_args):
             #pprint.pprint(project)
             request_handler_args['req'].context['result'] = project.to_dict()
 
+def GetProjects(**request_handler_args):
+    projects = []
+    for project in Project.objects.all():
+        projects.append(project.to_dict())
+    request_handler_args['req'].context['result'] = projects
+
 def createFile(**request_handler_args):
         resp = request_handler_args['resp']
         resp.status = falcon.HTTP_200
@@ -247,7 +253,7 @@ operation_handlers = {
     'deleteUser':                   [DeleteUser, ProcessJsonResp],
     'getUser':                      [GetUser, ProcessJsonResp],
     'getUsers':                     [GetUsers, ProcessJsonResp],
-    'getProjects':                  [not_found],
+    'getProjects':                  [GetProjects, ProcessJsonResp],
     'createProject':                [RequireJson, ProcessJsonReq,CreateProject, ProcessJsonResp],
     'getProject':                   [not_found],
     'updateProject':                [not_found],
