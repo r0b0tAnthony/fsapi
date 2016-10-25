@@ -218,6 +218,16 @@ def GetProjects(**request_handler_args):
         projects.append(project.to_dict())
     request_handler_args['req'].context['result'] = projects
 
+def GetProject(**request_handler_args):
+    try:
+        project = Project.objects.get({"_id": ObjectId(request_handler_args['uri_fields']['id'])})
+    except InvalidId as e:
+        raise falcon.HTTPBadRequest('Bad Request', str(e))
+    except Project.DoesNotExist:
+        raise falcon.HTTPNotFound()
+    else:
+        request_handler_args['req'].context['result'] = project.to_dict()
+
 def createFile(**request_handler_args):
         resp = request_handler_args['resp']
         resp.status = falcon.HTTP_200
@@ -255,7 +265,7 @@ operation_handlers = {
     'getUsers':                     [GetUsers, ProcessJsonResp],
     'getProjects':                  [GetProjects, ProcessJsonResp],
     'createProject':                [RequireJson, ProcessJsonReq,CreateProject, ProcessJsonResp],
-    'getProject':                   [not_found],
+    'getProject':                   [GetProject, ProcessJsonResp],
     'updateProject':                [not_found],
     'deleteProject':                [not_found],
     'createFile':                   [createFile],
