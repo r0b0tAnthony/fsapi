@@ -202,7 +202,7 @@ def CreateProject(**request_handler_args):
     try:
         project = Project(name = doc['name'], acl_schema = project_schema, paths = doc['paths'], users = project_users)
     except KeyError as e:
-        raise falcon.HTTPBadRequest('Invalid Schema Object', "Schema JSON Object is invalid. %s" % e)
+        raise falcon.HTTPBadRequest('Invalid Project Object', "Project JSON Object is invalid. %s" % e)
     else:
         try:
             project.save()
@@ -227,6 +227,49 @@ def GetProject(**request_handler_args):
         raise falcon.HTTPNotFound()
     else:
         request_handler_args['req'].context['result'] = project.to_dict()
+
+def UpdateProject(**request_handler_args):
+    authUser(request_handler_args['req'], request_handler_args['resp'], ['createProject'])
+    doc = request_handler_args['req'].context['doc']
+    try:
+        project = Project.objects.get({"_id": ObjectId(request_handler_args['uri_fields']['id'])})
+    except InvalidId as e:
+        raise falcon.HTTPBadRequest('Bad Request', str(e))
+    except Project.DoesNotExist:
+        raise falcon.HTTPNotFound()
+    else:
+        try:
+            user_ids = []
+            for x in range(len(doc['users'])):
+                user_ids.append(ObjectId(doc['users'][x]))
+        except InvalidId as e:
+            raise falcon.HTTPBadRequest('Bad Request', str(e))
+
+        try:
+            project_users = User.objects.raw({'_id': { '$in': user_ids} })
+        except User.DoesNotExist:
+            raise falcon.HTTPNotFound()
+
+        try:
+            project_schema = Schema.objects.get({'_id': ObjectId(doc['acl_schema'])})
+        except InvalidId as e:
+            raise falcon.HTTPBadRequest('Bad Request', str(e))
+
+        try:
+            project.name = doc['name']
+            project.acl_schema = project_schema
+            project.users = project_users
+            project.paths = doc['paths']
+        except KeyError as e:
+            raise falcon.HTTPBadRequest('Invalid Project Object', "Project JSON Object is invalid. %s" % e)
+        else:
+            try:
+                project.save()
+            except project.ValidationError as e:
+                raise falcon.HTTPBadRequest("Validation Error", e.message)
+            else:
+                #pprint.pprint(project)
+                request_handler_args['req'].context['result'] = project.to_dict()
 
 def createFile(**request_handler_args):
         resp = request_handler_args['resp']
@@ -266,7 +309,7 @@ operation_handlers = {
     'getProjects':                  [GetProjects, ProcessJsonResp],
     'createProject':                [RequireJson, ProcessJsonReq,CreateProject, ProcessJsonResp],
     'getProject':                   [GetProject, ProcessJsonResp],
-    'updateProject':                [not_found],
+    'updateProject':                [RequireJson, ProcessJsonReq, UpdateProject, ProcessJsonResp],
     'deleteProject':                [not_found],
     'createFile':                   [createFile],
     'getFile':                      [not_found],
