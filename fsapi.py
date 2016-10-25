@@ -282,6 +282,55 @@ def DeleteProject(**request_handler_args):
     else:
         project.delete()
 
+def GetProjectUsers(**request_handler_args):
+    try:
+        project = Project.objects.get({"_id": ObjectId(request_handler_args['uri_fields']['id'])})
+    except InvalidId as e:
+        raise falcon.HTTPBadRequest('Bad Request', str(e))
+    except Project.DoesNotExist:
+        raise falcon.HTTPNotFound()
+    else:
+        users = []
+        for x in range(len(project.users)):
+            users.append(project.users[x].to_dict())
+        request_handler_args['req'].context['result'] = users
+
+def UpdateProjectUsers(**request_handler_args):
+    authUser(request_handler_args['req'], request_handler_args['resp'], ['createProject'])
+    doc = request_handler_args['req'].context['doc']
+    try:
+        project = Project.objects.get({"_id": ObjectId(request_handler_args['uri_fields']['id'])})
+    except InvalidId as e:
+        raise falcon.HTTPBadRequest('Bad Request', str(e))
+    except Project.DoesNotExist:
+        raise falcon.HTTPNotFound()
+    else:
+        try:
+            user_ids = []
+            for x in range(len(doc['users'])):
+                user_ids.append(ObjectId(doc['users'][x]))
+        except InvalidId as e:
+            raise falcon.HTTPBadRequest('Bad Request', str(e))
+
+        try:
+            project_users = User.objects.raw({'_id': { '$in': user_ids} })
+        except User.DoesNotExist:
+            raise falcon.HTTPNotFound()
+        try:
+            project.users = project_users
+        except KeyError as e:
+            raise falcon.HTTPBadRequest('Invalid Project Object', "Project JSON Object is invalid. %s" % e)
+        else:
+            try:
+                project.save()
+            except project.ValidationError as e:
+                raise falcon.HTTPBadRequest("Validation Error", e.message)
+            else:
+                users = []
+                for x in range(len(project.users)):
+                    users.append(project.users[x].to_dict())
+                request_handler_args['req'].context['result'] = users
+
 def createFile(**request_handler_args):
         resp = request_handler_args['resp']
         resp.status = falcon.HTTP_200
@@ -299,7 +348,6 @@ def authUser(req, resp, permissions):
             raise falcon.HTTPForbidden('Forbidden', "%s does not have the required permissions: %s" % (user.username, ', '.join(diff_perms)))
     except User.DoesNotExist:
         raise falcon.HTTPForbidden('Forbidden','Username and password does not exist.')
-
 
 def not_found(**request_handler_args):
     raise falcon.HTTPNotFound('Not found.', 'Requested resource not found.')
@@ -326,14 +374,14 @@ operation_handlers = {
     'getFile':                      [not_found],
     'setACL':                       [not_found],
     'getACL':                       [not_found],
-    'getProjectUsers':              [not_found],
-    'updateProjectUsers':           [not_found],
+    'getProjectUsers':              [GetProjectUsers, ProcessJsonResp],
+    'updateProjectUsers':           [RequireJson, ProcessJsonReq, UpdateProjectUsers, ProcessJsonResp],
     'deleteProjectUser':            [not_found],
     'createACLSchema':              [RequireJson, ProcessJsonReq, CreateACLSchema, ProcessJsonResp],
     'getACLSchemas':                [GetACLSchemas, ProcessJsonResp],
     'getACLSchema':                 [GetACLSchema, ProcessJsonResp],
     'updateACLSchema':              [RequireJson, ProcessJsonReq, UpdateACLSchema, ProcessJsonResp],
-    'deleteACLSchema':              [not_found],
+    'deleteACLSchema':              [DeleteACLSchema, ProcessJsonResp],
 }
 connect("mongodb://localhost:27017/fsapi", alias='fsapi-app')
 
