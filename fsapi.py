@@ -271,6 +271,17 @@ def UpdateProject(**request_handler_args):
                 #pprint.pprint(project)
                 request_handler_args['req'].context['result'] = project.to_dict()
 
+def DeleteProject(**request_handler_args):
+    authUser(request_handler_args['req'], request_handler_args['resp'], ['deleteProject'])
+    try:
+        project = Project.objects.get({"_id": ObjectId(request_handler_args['uri_fields']['id'])})
+    except InvalidId as e:
+        raise falcon.HTTPBadRequest('Bad Request', str(e))
+    except Project.DoesNotExist:
+        raise falcon.HTTPNotFound()
+    else:
+        project.delete()
+
 def createFile(**request_handler_args):
         resp = request_handler_args['resp']
         resp.status = falcon.HTTP_200
@@ -310,7 +321,7 @@ operation_handlers = {
     'createProject':                [RequireJson, ProcessJsonReq,CreateProject, ProcessJsonResp],
     'getProject':                   [GetProject, ProcessJsonResp],
     'updateProject':                [RequireJson, ProcessJsonReq, UpdateProject, ProcessJsonResp],
-    'deleteProject':                [not_found],
+    'deleteProject':                [DeleteProject, ProcessJsonResp],
     'createFile':                   [createFile],
     'getFile':                      [not_found],
     'setACL':                       [not_found],
