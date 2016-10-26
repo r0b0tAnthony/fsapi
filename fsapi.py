@@ -356,7 +356,13 @@ def CreateFile(**request_handler_args):
                     raise falcon.HTTPBadRequest('Bad Request', e.message)
                 ProjectFS.CreateFile(path)
                 try:
-                    request_handler_args['req'].context['result'] = {'path': path, 'security': ACL.GetACL(path)}
+                    request_handler_args['req'].context['result'] = {
+                            'path': path,
+                            'security': ACL.GetACL(path),
+                            'created': ProjectFS.GetCTime(path),
+                            'modified': ProjectFS.GetMTime(path),
+                            'accessed': ProjectFS.GetATime(path)
+                    }
                 except ACL.error as e:
                     raise falcon.HTTPInternalServerError('Internal Server Error', str(e))
             else:
@@ -399,7 +405,6 @@ operation_handlers = {
     'updateProject':                [RequireJson, ProcessJsonReq, UpdateProject, ProcessJsonResp],
     'deleteProject':                [DeleteProject, ProcessJsonResp],
     'createFile':                   [RequireJson, ProcessJsonReq, CreateFile, ProcessJsonResp],
-    'getFile':                      [not_found],
     'setACL':                       [not_found],
     'getACL':                       [not_found],
     'getProjectUsers':              [GetProjectUsers, ProcessJsonResp],

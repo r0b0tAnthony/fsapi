@@ -6,6 +6,7 @@ import pywintypes
 import ntsecuritycon as con
 import posixpath
 import pprint
+import time
 
 class ACL:
     #translation to ntsecuritycon constants
@@ -335,3 +336,15 @@ class ProjectFS:
             path = path.replace('/', '\\')
 
         return path
+
+    @staticmethod
+    def GetMTime(path):
+        return time.ctime(os.path.getmtime(path))
+
+    @staticmethod
+    def GetCTime(path):
+        return time.ctime(os.path.getctime(path))
+
+    @staticmethod
+    def GetATime(path):
+        return time.ctime(os.path.getatime(path))
