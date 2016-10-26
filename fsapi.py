@@ -2,14 +2,15 @@ import falcon
 import falcon.status_codes as status
 from serve_swagger import SpecServer
 from waitress import serve
-from pymodm import connect
+from pymodm import connect, context_managers
 from resources.models import User, Project, Schema
-from resources.acl import ACL
+from resources.fs import ACL, ProjectFS
 from bson.objectid import ObjectId
 from bson.errors import InvalidId
 import pprint
 import json
 import datetime
+
 
 def ProcessJsonResp(**request_handler_args):
     if 'result' not in request_handler_args['req'].context:
@@ -188,6 +189,8 @@ def CreateProject(**request_handler_args):
             user_ids.append(ObjectId(doc['users'][x]))
     except InvalidId as e:
         raise falcon.HTTPBadRequest('Bad Request', str(e))
+    except KeyError as e:
+        raise falcon.HTTPBadRequest('Bad Request', "Project object is missing 'users' property list.")
 
     try:
         project_users = User.objects.raw({'_id': { '$in': user_ids} })
@@ -198,6 +201,8 @@ def CreateProject(**request_handler_args):
         project_schema = Schema.objects.get({'_id': ObjectId(doc['acl_schema'])})
     except InvalidId as e:
         raise falcon.HTTPBadRequest('Bad Request', str(e))
+    except KeyError as e:
+        raise falcon.HTTPBadRequest('Bad Request', "Project object is missing 'acl_schema' property string.")
 
     try:
         project = Project(name = doc['name'], acl_schema = project_schema, paths = doc['paths'], users = project_users)
@@ -331,10 +336,31 @@ def UpdateProjectUsers(**request_handler_args):
                     users.append(project.users[x].to_dict())
                 request_handler_args['req'].context['result'] = users
 
-def createFile(**request_handler_args):
-        resp = request_handler_args['resp']
-        resp.status = falcon.HTTP_200
-        resp.body = ("%s HELP HELP" % resp.body)
+def CreateFile(**request_handler_args):
+    authUser(request_handler_args['req'], request_handler_args['resp'], ['createFile'])
+    user = request_handler_args['req'].context['user']
+    doc = request_handler_args['req'].context['doc']
+    try:
+        project = Project.objects.get({"_id": ObjectId(request_handler_args['uri_fields']['id'])})
+    except InvalidId as e:
+        raise falcon.HTTPBadRequest('Bad Request', str(e))
+    except Project.DoesNotExist:
+        raise falcon.HTTPNotFound()
+    else:
+        with context_managers.no_auto_dereference(Project):
+            pprint.pprint(project.users)
+            if user._id in project.users:
+                try:
+                    path = ProjectFS.TranslatePath(doc['path'], doc['platform'], project.paths)
+                except (ValueError, KeyError) as e:
+                    raise falcon.HTTPBadRequest('Bad Request', e.message)
+                ProjectFS.CreateFile(path)
+                try:
+                    request_handler_args['req'].context['result'] = {'path': path, 'security': ACL.GetACL(path)}
+                except ACL.error as e:
+                    raise falcon.HTTPInternalServerError('Internal Server Error', str(e))
+            else:
+                raise falcon.HTTPForbidden('Forbidden', "%s is not assigned to this project." % user.username)
 
 def authUser(req, resp, permissions):
     authHeader = req.get_header('Authorization')
@@ -348,6 +374,8 @@ def authUser(req, resp, permissions):
             raise falcon.HTTPForbidden('Forbidden', "%s does not have the required permissions: %s" % (user.username, ', '.join(diff_perms)))
     except User.DoesNotExist:
         raise falcon.HTTPForbidden('Forbidden','Username and password does not exist.')
+    else:
+        req.context['user'] = user
 
 def not_found(**request_handler_args):
     raise falcon.HTTPNotFound('Not found.', 'Requested resource not found.')
@@ -370,7 +398,7 @@ operation_handlers = {
     'getProject':                   [GetProject, ProcessJsonResp],
     'updateProject':                [RequireJson, ProcessJsonReq, UpdateProject, ProcessJsonResp],
     'deleteProject':                [DeleteProject, ProcessJsonResp],
-    'createFile':                   [createFile],
+    'createFile':                   [RequireJson, ProcessJsonReq, CreateFile, ProcessJsonResp],
     'getFile':                      [not_found],
     'setACL':                       [not_found],
     'getACL':                       [not_found],
