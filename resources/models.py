@@ -1,11 +1,12 @@
 import re
-from acl import ACL
+from fs import ACL
 from pymongo.write_concern import WriteConcern
 from pymongo import errors as pymongo_errors
 from pymodm import MongoModel, fields, context_managers
 from pymodm import errors as pymodm_errors
 import datetime
 import posixpath
+import ntpath
 import pprint
 import base64
 
@@ -32,17 +33,26 @@ def ValidateUserPermissions(value):
 
 def ValidateProjectPaths(paths):
     try:
-        paths['linux'] = posixpath.abspath(paths['linux'])
+        if not posixpath.isabs(paths['linux']):
+            raise pymodm_errors.ValidationError('Linux path must be absolute')
+        else:
+            paths['linux'] = posixpath.normpath(paths['linux'])
     except KeyError:
         raise pymodm_errors.ValidationError('Project paths property is missing linux propety.')
 
     try:
-        paths['darwin'] = posixpath.abspath(paths['darwin'])
+        if not posixpath.isabs(paths['darwin']):
+            raise pymodm_errors.ValidationError('Darwin path must be absolute')
+        else:
+            paths['darwin'] = posixpath.normpath(paths['darwin'])
     except KeyError:
         raise pymodm_errors.ValidationError('Project paths property is missing darwin property.')
 
     try:
-        paths['windows'] = posixpath.normpath(paths['windows'].replace('\\', '/'))
+        if not ntpath.isabs(paths['windows']):
+            raise pymodm_errors.ValidationError('Windows path must be absolute')
+        else:
+            paths['windows'] = paths['windows'].replace('\\', '/')
     except KeyError:
         raise pymodm_errors.ValidationError('Project paths property is missing windows property.')
 
