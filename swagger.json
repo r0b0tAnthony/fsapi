@@ -1,7 +1,7 @@
 {
     "swagger": "2.0",
     "info": {
-        "version": "0.1.3",
+        "version": "0.1.4",
         "title": "File Creation Service",
         "description": "**User Name and Password**\n* User Name: `user`\n* Password: `pass`"
     },
@@ -510,42 +510,6 @@
                     "format": "int64"
                 }
             ]
-        },
-        "/projects/{id}/user/{userid}": {
-            "delete": {
-                "tags": ["Projects", "Users"],
-                "description": "Delete Specified `User` from Specified `Project`",
-                "operationId": "deleteProjectUser",
-                "parameters": [
-                    {
-                        "name": "id",
-                        "in": "path",
-                        "required": true,
-                        "type": "integer",
-                        "format": "int64"
-                    },
-                    {
-                        "name": "userid",
-                        "in": "path",
-                        "required": true,
-                        "type": "integer",
-                        "format": "int64"
-                    }
-                ],
-                "security": [
-                    {
-                        "createProjectSecurity": []
-                    },
-                    {
-                        "basic_auth": []
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "Successful Response"
-                    }
-                }
-            }
         },
         "/acl/schema": {
             "post": {

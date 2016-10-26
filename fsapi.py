@@ -376,7 +376,6 @@ operation_handlers = {
     'getACL':                       [not_found],
     'getProjectUsers':              [GetProjectUsers, ProcessJsonResp],
     'updateProjectUsers':           [RequireJson, ProcessJsonReq, UpdateProjectUsers, ProcessJsonResp],
-    'deleteProjectUser':            [not_found],
     'createACLSchema':              [RequireJson, ProcessJsonReq, CreateACLSchema, ProcessJsonResp],
     'getACLSchemas':                [GetACLSchemas, ProcessJsonResp],
     'getACLSchema':                 [GetACLSchema, ProcessJsonResp],
