@@ -7,6 +7,7 @@ import ntsecuritycon as con
 import posixpath
 import pprint
 import time
+import re
 
 class ACL:
     #translation to ntsecuritycon constants
@@ -107,6 +108,56 @@ class ACL:
 
             return {'owner': owner, 'acl': acl}
 
+    @staticmethod
+    def GetSecurityInfoBits(security_info):
+        bits = 0
+        for security in security_info:
+            try:
+                bits = bits | ACL.info_bits[security]
+            except KeyError:
+                raise KeyError("Security Info %s does not exist" % security)
+        return bits
+
+    @staticmethod
+    def SetSecurityInfo(path, security_info, owner = None, group = None, dacl = None, sacl = None):
+        win32security.SetNamedSecurityInfo(path, win32security.SE_FILE_OBJECT, security_info, owner, group, dacl, sacl)
+
+    @staticmethod
+    def SetMatchedACL(path, matched_acl):
+        acl_obj = ACL.GetACLObj(matched_acl['acl'])
+        owner_obj = ACL.GetIdObjFromStr(matched_acl['owner'])
+
+        matched_acl['security_info'] = ['DACL_SECURITY_INFO', 'UNPROTECTED_DACL', 'OWNER_SECURITY_INFO']
+
+        try:
+            if matched_acl['ignore_inheritance']:
+                matched_acl['security_info'].remove('UNPROTECTED_DACL')
+                matched_acl['security_info'].append('PROTECTED_DACL')
+        except KeyError:
+            pass
+
+        security_info_bits = ACL.GetSecurityInfoBits(matched_acl['security_info'])
+
+        ACL.SetSecurityInfo(path = path, security_info = security_info_bits, owner = owner_obj, dacl = acl_obj)
+
+    @staticmethod
+    def GetACLObj(acl):
+        security_obj = win32security.ACL()
+
+        for x in range(len(acl)):
+            ace = acl[x]
+            ACL.SetACE(security_obj, ace['account_id'], ace['mask_bits'], ace['type'], ace['inherit_bits'])
+        return security_obj
+
+    @staticmethod
+    def SetACE(security_obj, sid_string, access_mask, access_type, inherit_mask):
+        sid = ACL.GetIdObjFromStr(sid_string)
+        if access_type == 'allow':
+            security_obj.AddAccessAllowedAceEx(win32security.ACL_REVISION, inherit_mask, access_mask, sid)
+        elif access_type == 'deny':
+            security_obj.AddAccessDeniedAceEx(win32security.ACL_REVISION, inherit_mask, access_mask, sid)
+        else:
+            raise ValueError('ACE access type must be allow or deny!')
 
     @staticmethod
     def ValidateDACLSchema(dacl):
@@ -181,8 +232,8 @@ class ACL:
         return win32security.GetBinarySid(id_str)
 
     @staticmethod
-    def GetAccountIdStr(staticmethod):
-        return str(sid)[6:]
+    def GetAccountIdStr(id_obj):
+        return str(id_obj)[6:]
 
     @staticmethod
     def GetAccountByName(name, domain):
@@ -251,7 +302,17 @@ class ACL:
         return expanded_schema
 
     @staticmethod
+    def GetProjectSchemaDepth(expanded_schema):
+        depth_schema = {}
+
+        for platform in expanded_schema:
+            depth_schema[platform] = {}
+            for needle_path in expanded_schema[platform]:
+                depth_schema[platform][needle_path] = needle_path.count('/')
+        return depth_schema
+    @staticmethod
     def GetExpandedDACL(dacl, schema, acl_path = None):
+
         for key in dacl:
             current = dacl[key]
             expanded_acl = ACL.getExpandedACL(current['acl'])
@@ -336,6 +397,24 @@ class ProjectFS:
             path = path.replace('/', '\\')
 
         return path
+
+    @staticmethod
+    def GetMatchACLPath(path, platform, expanded_acl, expanded_depth):
+        path_norm = path.replace('\\', '/')
+
+        path_depth = path_norm.count('/')
+        try:
+
+            filtered = {k: v for k, v in expanded_depth[platform].items() if v == path_depth}
+        except KeyError:
+            raise ValueError("%s is not a valid platform. Please use windows, linux, or darwin." % platform)
+        if filtered == 0:
+            return None
+        else:
+            for path_needle in filtered:
+                if re.match(path_needle, path_norm):
+                    return expanded_acl[platform][path_needle]
+        return None
 
     @staticmethod
     def GetMTime(path):

@@ -44,7 +44,7 @@ def ValidateProjectPaths(paths):
         if not posixpath.isabs(paths['darwin']):
             raise pymodm_errors.ValidationError('Darwin path must be absolute')
         else:
-            paths['darwin'] = posixpath.normpath(paths['darwin'])
+            paths['darwin']= posixpath.normpath(paths['darwin'])
     except KeyError:
         raise pymodm_errors.ValidationError('Project paths property is missing darwin property.')
 
@@ -55,6 +55,7 @@ def ValidateProjectPaths(paths):
             paths['windows'] = paths['windows'].replace('\\', '/')
     except KeyError:
         raise pymodm_errors.ValidationError('Project paths property is missing windows property.')
+
 
 class Schema(MongoModel):
     name = fields.CharField(min_length = 3, validators=[ValidateName], required = True)
@@ -121,6 +122,7 @@ class Project(MongoModel):
     acl_schema = fields.ReferenceField(Schema, required = True, on_delete = fields.ReferenceField.DENY)
     paths = fields.DictField(validators=[ValidateProjectPaths], required = True)
     acl_expanded = fields.DictField()
+    acl_expanded_depth = fields.DictField()
 
     ValidationError = pymodm_errors.ValidationError
     DuplicateKeyError = pymongo_errors.DuplicateKeyError
@@ -130,6 +132,7 @@ class Project(MongoModel):
 
     def clean(self):
         self.acl_expanded = ACL.GetProjectSchema(self.acl_schema.expanded_schema, self.paths)
+        self.acl_expanded_depth = ACL.GetProjectSchemaDepth(self.acl_expanded)
 
     def to_dict(self):
         user_ids = []

@@ -25,8 +25,8 @@ def ProcessJsonReq(**request_handler_args):
     # See also: PEP 3333
     req = request_handler_args['req']
     if req.content_length in (None, 0):
-        # Nothing to do
-        return
+        raise falcon.HTTPBadRequest('Empty request body',
+                                    'A valid JSON document is required.')
 
     body = req.stream.read()
     if not body:
@@ -47,7 +47,7 @@ def RequireJson(**request_handler_args):
     req = request_handler_args['req']
     if not req.client_accepts_json:
         raise falcon.HTTPNotAcceptable('This API only supports responses encoded as JSON.')
-    if req.method in ('POST', 'PUT'):
+    if req.method in ('POST', 'PUT', 'GET'):
         if 'application/json' not in req.content_type:
             raise falcon.HTTPUnsupportedMediaType('This API only supports requests encoded as JSON.')
 
@@ -168,6 +168,8 @@ def UpdateACLSchema(**request_handler_args):
         except schema.ValidationError as e:
             raise falcon.HTTPBadRequest("Validation Error", e.message)
         else:
+            for project in Project.objects.raw({"acl_schema": schema._id}):
+                project.save()
             request_handler_args['req'].context['result'] = schema.to_dict()
 def DeleteACLSchema(**request_handler_args):
     authUser(request_handler_args['req'], request_handler_args['resp'], ['deleteACLSchema'])
@@ -248,7 +250,7 @@ def UpdateProject(**request_handler_args):
             for x in range(len(doc['users'])):
                 user_ids.append(ObjectId(doc['users'][x]))
         except InvalidId as e:
-            raise falcon.HTTPBadRequest('Bad Request', str(e))
+            raise falcon.HTTPBadRequest('Invalid User IDs', str(e))
 
         try:
             project_users = User.objects.raw({'_id': { '$in': user_ids} })
@@ -258,7 +260,7 @@ def UpdateProject(**request_handler_args):
         try:
             project_schema = Schema.objects.get({'_id': ObjectId(doc['acl_schema'])})
         except InvalidId as e:
-            raise falcon.HTTPBadRequest('Bad Request', str(e))
+            raise falcon.HTTPBadRequest('Invalid Schema Id', str(e))
 
         try:
             project.name = doc['name']
@@ -348,13 +350,22 @@ def CreateFile(**request_handler_args):
         raise falcon.HTTPNotFound()
     else:
         with context_managers.no_auto_dereference(Project):
-            pprint.pprint(project.users)
             if user._id in project.users:
                 try:
                     path = ProjectFS.TranslatePath(doc['path'], doc['platform'], project.paths)
                 except (ValueError, KeyError) as e:
                     raise falcon.HTTPBadRequest('Bad Request', e.message)
-                ProjectFS.CreateFile(path)
+                try:
+                    if doc['type'] == 'file':
+                        ProjectFS.CreateFile(path)
+                    elif doc['type'] == 'folder':
+                        ProjectFS.CreateDirectory(path)
+                    else:
+                        raise HTTPBadRequest('Bad Request', 'Type property of FS object must be either file or folder.')
+                except (OSError, IOError) as e:
+                    raise falcon.HTTPInternalServerError('Internal Server Error', str(e))
+                except KeyError:
+                    raise falcon.HTTPBadRequest('Bad Request', 'FS Object is missing type property.')
                 try:
                     request_handler_args['req'].context['result'] = {
                             'path': path,
@@ -365,6 +376,59 @@ def CreateFile(**request_handler_args):
                     }
                 except ACL.error as e:
                     raise falcon.HTTPInternalServerError('Internal Server Error', str(e))
+            else:
+                raise falcon.HTTPForbidden('Forbidden', "%s is not assigned to this project." % user.username)
+
+def SetACL(**request_handler_args):
+    authUser(request_handler_args['req'], request_handler_args['resp'], ['setACL'])
+    user = request_handler_args['req'].context['user']
+    doc = request_handler_args['req'].context['doc']
+    try:
+        project = Project.objects.get({"_id": ObjectId(request_handler_args['uri_fields']['id'])})
+    except InvalidId as e:
+        raise falcon.HTTPBadRequest('Bad Request', str(e))
+    except Project.DoesNotExist:
+        raise falcon.HTTPNotFound()
+    else:
+        with context_managers.no_auto_dereference(Project):
+            if user._id in project.users:
+
+                try:
+                    matched_acl = ProjectFS.GetMatchACLPath(doc['path'], doc['platform'], project.acl_expanded, project.acl_expanded_depth)
+                    path = ProjectFS.TranslatePath(doc['path'], doc['platform'], project.paths)
+                except ValueError as e:
+                    raise falcon.HTTPBadRequest("Bad Request: Invalid Value", e.message)
+                except KeyError as e:
+                    raise falcon.HTTPBadRequest('Bad Request: Missing Key', e.message)
+                else:
+                    if matched_acl != None:
+                        try:
+                            ACL.SetMatchedACL(path, matched_acl)
+                        except ACL.error as e:
+                            raise falcon.HTTPInternalServerError('Internal Server Error', e[2])
+
+                        try:
+                            request_handler_args['req'].context['result'] = {
+                                    'path': path,
+                                    'security': ACL.GetACL(path),
+                                    'created': ProjectFS.GetCTime(path),
+                                    'modified': ProjectFS.GetMTime(path),
+                                    'accessed': ProjectFS.GetATime(path)
+                            }
+                        except ACL.error as e:
+                            raise falcon.HTTPInternalServerError('Internal Server Error', str(e))
+                    else:
+                        request_handler_args['resp'].status = falcon.HTTP_202
+                        try:
+                            request_handler_args['req'].context['result'] = {
+                                    'path': path,
+                                    'security': ACL.GetACL(path),
+                                    'created': ProjectFS.GetCTime(path),
+                                    'modified': ProjectFS.GetMTime(path),
+                                    'accessed': ProjectFS.GetATime(path)
+                            }
+                        except ACL.error as e:
+                            raise falcon.HTTPInternalServerError('Internal Server Error', str(e))
             else:
                 raise falcon.HTTPForbidden('Forbidden', "%s is not assigned to this project." % user.username)
 
@@ -405,8 +469,7 @@ operation_handlers = {
     'updateProject':                [RequireJson, ProcessJsonReq, UpdateProject, ProcessJsonResp],
     'deleteProject':                [DeleteProject, ProcessJsonResp],
     'createFile':                   [RequireJson, ProcessJsonReq, CreateFile, ProcessJsonResp],
-    'setACL':                       [not_found],
-    'getACL':                       [not_found],
+    'setACL':                       [RequireJson, ProcessJsonReq, SetACL, ProcessJsonResp],
     'getProjectUsers':              [GetProjectUsers, ProcessJsonResp],
     'updateProjectUsers':           [RequireJson, ProcessJsonReq, UpdateProjectUsers, ProcessJsonResp],
     'createACLSchema':              [RequireJson, ProcessJsonReq, CreateACLSchema, ProcessJsonResp],
