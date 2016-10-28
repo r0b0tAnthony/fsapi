@@ -65,7 +65,8 @@ class Schema(MongoModel):
 
     ValidationError = pymodm_errors.ValidationError
     DuplicateKeyError = pymongo_errors.DuplicateKeyError
-
+    OperationError = pymodm_errors.OperationError
+    
     class Meta:
         connection_alias = 'fsapi-app'
 

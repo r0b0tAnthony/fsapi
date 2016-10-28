@@ -180,7 +180,10 @@ def DeleteACLSchema(**request_handler_args):
     except Schema.DoesNotExist:
         raise falcon.HTTPNotFound()
     else:
-        schema.delete()
+        try:
+            schema.delete()
+        except Schema.OperationError as e:
+            raise falcon.HTTPInternalServerError('Internal Server Error', e.message)
 
 def CreateProject(**request_handler_args):
     authUser(request_handler_args['req'], request_handler_args['resp'], ['createProject'])
