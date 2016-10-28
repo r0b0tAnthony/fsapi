@@ -1,7 +1,7 @@
 {
     "swagger": "2.0",
     "info": {
-        "version": "0.1.4",
+        "version": "0.3",
         "title": "File Creation Service",
         "description": "**User Name and Password**\n* User Name: `user`\n* Password: `pass`"
     },
@@ -333,41 +333,6 @@
                         "basic_auth": []
                     }
                 ]
-            },
-            "get": {
-                "tags": ["Projects"],
-                "description": "Get Info On Specified File/Folder",
-                "operationId": "getFile",
-                "parameters": [
-                    {
-                        "name": "body",
-                        "in": "body",
-                        "required": true,
-                        "schema": {
-                            "$ref": "#/definitions/NewFile"
-                        }
-                    },
-                    {
-                        "name": "id",
-                        "in": "path",
-                        "required": true,
-                        "type": "integer",
-                        "format": "int64"
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "Successful Response",
-                        "schema": {
-                            "$ref": "#/definitions/File"
-                        }
-                    }
-                },
-                "security": [
-                    {
-                        "basic_auth": []
-                    }
-                ]
             }
         },
         "/projects/{id}/file/acl": {
@@ -408,41 +373,6 @@
                         }
                     }
                 }
-            },
-            "get": {
-                "tags": ["Projects"],
-                "description": "Get ACL of File/Folder",
-                "operationId": "getACL",
-                "parameters": [
-                    {
-                        "name": "body",
-                        "in": "body",
-                        "required": true,
-                        "schema": {
-                            "$ref": "#/definitions/NewFile"
-                        }
-                    },
-                    {
-                        "name": "id",
-                        "in": "path",
-                        "required": true,
-                        "type": "integer",
-                        "format": "int64"
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "Set ACL Successfully",
-                        "schema": {
-                            "$ref": "#/definitions/File"
-                        }
-                    }
-                },
-                "security": [
-                    {
-                        "basic_auth": []
-                    }
-                ]
             }
         },
         "/projects/{id}/user": {
