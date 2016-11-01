@@ -66,7 +66,7 @@ class Schema(MongoModel):
     ValidationError = pymodm_errors.ValidationError
     DuplicateKeyError = pymongo_errors.DuplicateKeyError
     OperationError = pymodm_errors.OperationError
-    
+
     class Meta:
         connection_alias = 'fsapi-app'
 
@@ -144,6 +144,5 @@ class Project(MongoModel):
             'name': self.name,
             'users': user_ids,
             'acl_schema': str(self.acl_schema._id),
-            'paths': self.paths,
-            'acl_expanded': self.acl_expanded
+            'paths': self.paths
         }
