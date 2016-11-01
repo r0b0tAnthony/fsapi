@@ -78,15 +78,19 @@ class SpecServer():
 
         try:
             version = swagger_spec['info']['version']
-        except Exception:
+        except KeyError:
             version = '3.0'
             pass
 
+        try:
+            basePath = swagger_spec['basePath']
+        except KeyError:
+            basePath = ''
         for k in swagger_spec['paths'].keys():
             for http_method in swagger_spec['paths'][k].keys():
                 if http_method == 'parameters':
                     continue
-                uri_fields, uri_template = compile_uri_template('/' + http_method.lower() + '/' + version + k)
+                uri_fields, uri_template = compile_uri_template('/' + http_method.lower() + basePath + '/' + version + k)
                 self.routing_templates.append(repr(uri_template))
                 operationId = swagger_spec['paths'][k][http_method]['operationId']
                 self.routing_table[operationId] = {'uri_fields': uri_fields, 'uri_template': uri_template}
