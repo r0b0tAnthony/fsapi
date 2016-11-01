@@ -361,7 +361,13 @@ class ProjectFS:
             new_file = open(path, 'a')
             new_file.close()
         except OSError as e:
-            raise OSError("Can't create file at %s:" % (path, e))
+            raise OSError("Can't create file at %s: %s" % (path, e))
+        except IOError as e:
+            if e[0] == 13:
+                if os.path.isfile(path):
+                    raise
+                else:
+                    raise IOError("Can't create file at %s: %s" % (path, e) )
 
     @staticmethod
     def CreateDirectory(path):

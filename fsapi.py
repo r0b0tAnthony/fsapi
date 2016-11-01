@@ -365,8 +365,13 @@ def CreateFile(**request_handler_args):
                         ProjectFS.CreateDirectory(path)
                     else:
                         raise HTTPBadRequest('Bad Request', 'Type property of FS object must be either file or folder.')
-                except (OSError, IOError) as e:
+                except OSError as e:
                     raise falcon.HTTPInternalServerError('Internal Server Error', str(e))
+                except IOError as e:
+                    if e[0] == 13:
+                        raise falcon.HTTPForbidden('Forbidden', str(e))
+                    else:
+                        raise falcon.HTTPInternalServerError('Internal Server Error', str(e))
                 except KeyError:
                     raise falcon.HTTPBadRequest('Bad Request', 'FS Object is missing type property.')
                 try:
@@ -408,6 +413,8 @@ def SetACL(**request_handler_args):
                         try:
                             ACL.SetMatchedACL(path, matched_acl)
                         except ACL.error as e:
+                            if e[0] == 5:
+                                raise falcon.HTTPForbidden('Forbidden: File Permissions', 'The FSAPI does not have file level permisions to set the ACL.')
                             raise falcon.HTTPInternalServerError('Internal Server Error', e[2])
 
                         try:
@@ -439,14 +446,13 @@ def authUser(req, resp, permissions):
     authHeader = req.get_header('Authorization')
     if authHeader == None:
         raise falcon.HTTPMissingHeader('Authorization')
-    resp.status = falcon.HTTP_200
     try:
         user = User.objects.get({"auth_b64": authHeader[6:]})
         diff_perms = list(set(permissions) - set(User.valid_permissions))
         if len(diff_perms) > 0:
             raise falcon.HTTPForbidden('Forbidden', "%s does not have the required permissions: %s" % (user.username, ', '.join(diff_perms)))
     except User.DoesNotExist:
-        raise falcon.HTTPForbidden('Forbidden','Username and password does not exist.')
+        raise falcon.HTTPUnauthorized('Unauthorized','Username and password does not exist.', ['Basic realm="WallyWorld"'])
     else:
         req.context['user'] = user
 
