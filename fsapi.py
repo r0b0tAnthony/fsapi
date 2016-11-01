@@ -61,6 +61,7 @@ def CreateUser(**request_handler_args):
     else:
         try:
             user.save()
+            request_handler_args['resp'].status = falcon.HTTP_201
             request_handler_args['req'].context['result'] = user.to_dict()
         except User.ValidationError as e:
             raise falcon.HTTPBadRequest("Validation Error", e.message)
@@ -132,6 +133,7 @@ def CreateACLSchema(**request_handler_args):
         except Schema.ValidationError as e:
             raise falcon.HTTPBadRequest("Validation Error", e.message)
         else:
+            request_handler_args['resp'].status = falcon.HTTP_201
             request_handler_args['req'].context['result'] = schema.to_dict()
 
 def GetACLSchemas(**request_handler_args):
@@ -195,7 +197,7 @@ def CreateProject(**request_handler_args):
     except InvalidId as e:
         raise falcon.HTTPBadRequest('Bad Request', str(e))
     except KeyError as e:
-        raise falcon.HTTPBadRequest('Bad Request', "Project object is missing 'users' property list.")
+        raise falcon.HTTPMissingParam('users')
 
     try:
         project_users = User.objects.raw({'_id': { '$in': user_ids} })
@@ -207,7 +209,7 @@ def CreateProject(**request_handler_args):
     except InvalidId as e:
         raise falcon.HTTPBadRequest('Bad Request', str(e))
     except KeyError as e:
-        raise falcon.HTTPBadRequest('Bad Request', "Project object is missing 'acl_schema' property string.")
+        raise falcon.HTTPMissingParam('acl_schema')
 
     try:
         project = Project(name = doc['name'], acl_schema = project_schema, paths = doc['paths'], users = project_users)
@@ -220,6 +222,7 @@ def CreateProject(**request_handler_args):
             raise falcon.HTTPBadRequest("Validation Error", e.message)
         else:
             #pprint.pprint(project)
+            request_handler_args['resp'].status = falcon.HTTP_201
             request_handler_args['req'].context['result'] = project.to_dict()
 
 def GetProjects(**request_handler_args):
@@ -375,6 +378,7 @@ def CreateFile(**request_handler_args):
                 except KeyError:
                     raise falcon.HTTPBadRequest('Bad Request', 'FS Object is missing type property.')
                 try:
+                    request_handler_args['resp'].status = falcon.HTTP_201
                     request_handler_args['req'].context['result'] = {
                             'path': path,
                             'security': ACL.GetACL(path),
