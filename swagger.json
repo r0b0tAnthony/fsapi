@@ -27,7 +27,7 @@
                     "Users"
                 ],
                 "operationId": "createUser",
-                "description": "Creates `user` object.\nDoes **require** createuser permission.\n",
+                "description": "Creates `user` object.\nDoes **require** createUser permission.\n",
                 "parameters": [
                     {
                         "name": "body",
