@@ -1,7 +1,7 @@
 {
     "swagger": "2.0",
     "info": {
-        "version": "0.4",
+        "version": "0.5",
         "title": "File Creation Service",
         "description": "**User Name and Password**\n* User Name: `user`\n* Password: `pass`"
     },
@@ -234,7 +234,7 @@
                         "description": "JSON Project Object",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/Project"
+                            "$ref": "#/definitions/NewProject"
                         }
                     }
                 ],
@@ -308,6 +308,15 @@
                         "required": true,
                         "type": "integer",
                         "format": "int64"
+                    },
+                    {
+                        "name": "body",
+                        "in": "body",
+                        "description": "JSON Project Object",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/NewProject"
+                        }
                     }
                 ],
                 "responses": {
@@ -401,7 +410,10 @@
                 ],
                 "responses": {
                     "201": {
-                        "description": "Created file/folder"
+                        "description": "Created file/folder",
+                        "schema": {
+                            "$ref": "#/definitions/File"
+                        }
                     },
                     "400": {
                         "description": "Bad Request / Missing Param",
@@ -804,8 +816,7 @@
                     ],
                     "properties": {
                         "id": {
-                            "type": "integer",
-                            "format": "int64"
+                            "type": "string"
                         },
                         "created": {
                             "type": "string",
@@ -824,7 +835,7 @@
             "required": [
                 "name",
                 "paths",
-                "aclschema",
+                "acl_schema",
                 "users"
             ],
             "properties": {
@@ -850,14 +861,15 @@
                         }
                     }
                 },
-                "aclschema": {
+                "acl_schema": {
                     "$ref": "#/definitions/ACLSchema"
                 },
                 "users": {
                     "type": "array",
                     "items": {
                         "$ref": "#/definitions/User"
-                    }
+                    },
+                    "minItems": 1
                 }
             }
         },
@@ -873,8 +885,7 @@
                     ],
                     "properties": {
                         "id": {
-                            "type": "integer",
-                            "format": "int64"
+                            "type": "string"
                         },
                         "created": {
                             "type": "string",
@@ -912,7 +923,11 @@
             ],
             "properties": {
                 "type": {
-                    "type": "string"
+                    "type": "string",
+                    "enum": [
+                        "file",
+                        "folder"
+                    ]
                 },
                 "owner": {
                     "$ref": "#/definitions/Owner"
@@ -925,6 +940,9 @@
                 },
                 "children": {
                     "type": "object"
+                },
+                "ignore_inheritance": {
+                    "type": "boolean"
                 }
             }
         },
@@ -933,7 +951,8 @@
             "required": [
                 "owner",
                 "mask",
-                "inheritance"
+                "inheritance",
+                "type"
             ],
             "properties": {
                 "owner": {
@@ -950,6 +969,13 @@
                     "items": {
                         "type": "string"
                     }
+                },
+                "type": {
+                    "type": "string",
+                    "enum": [
+                        "allow",
+                        "deny"
+                    ]
                 }
             }
         },
@@ -970,18 +996,8 @@
         },
         "File": {
             "type": "object",
-            "required": [
-                "path",
-                "type",
-                "created",
-                "modified",
-                "dacl"
-            ],
             "properties": {
                 "path": {
-                    "type": "string"
-                },
-                "type": {
                     "type": "string"
                 },
                 "created": {
@@ -992,8 +1008,12 @@
                     "type": "string",
                     "format": "date-time"
                 },
-                "dacl": {
-                    "$ref": "#/definitions/DACL"
+                "accessed": {
+                    "type": "string",
+                    "format": "date-time"
+                },
+                "security": {
+                    "$ref": "#/definitions/FileSecurity"
                 }
             }
         },
@@ -1001,18 +1021,41 @@
             "type": "object",
             "required": [
                 "path",
-                "aduser",
-                "type"
+                "type",
+                "platform"
             ],
             "properties": {
                 "type": {
-                    "type": "string"
+                    "type": "string",
+                    "enum": [
+                        "file",
+                        "folder"
+                    ]
                 },
                 "path": {
+                    "type": "string",
+                    "enum": [
+                        "linux",
+                        "darwin",
+                        "windows"
+                    ]
+                },
+                "platform": {
+                    "type": "string"
+                }
+            }
+        },
+        "FileSecurity": {
+            "type": "object",
+            "properties": {
+                "owner": {
                     "type": "string"
                 },
-                "aduser": {
-                    "type": "string"
+                "acl": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/ACE"
+                    }
                 }
             }
         },
