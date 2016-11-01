@@ -126,7 +126,7 @@ def CreateACLSchema(**request_handler_args):
     try:
         schema = Schema(name = doc['name'], schema = doc['schema'])
     except KeyError as e:
-        raise falcon.HTTPBadRequest('Invalid Schema Object', "Schema JSON Object is invalid. %s" % e)
+        raise falcon.HTTPMissingParam(str(e))
     else:
         try:
             schema.save()
@@ -158,13 +158,16 @@ def UpdateACLSchema(**request_handler_args):
     try:
         schema = Schema.objects.get({"_id": ObjectId(request_handler_args['uri_fields']['id'])})
     except InvalidId as e:
-        raise falcon.HTTPBadRequest('Bad Request', str(e))
+        raise falcon.HTTPMissing('Bad Request', str(e))
     except Schema.DoesNotExist:
         raise falcon.HTTPNotFound()
     else:
-        schema.name = doc['name']
-        schema.schema = doc['schema']
-        schema.modified = datetime.datetime.now()
+        try:
+            schema.name = doc['name']
+            schema.schema = doc['schema']
+            schema.modified = datetime.datetime.now()
+        except KeyError as e:
+            raise falcon.HTTPMissingParam(str(e))
         try:
             schema.save()
         except schema.ValidationError as e:
@@ -173,6 +176,7 @@ def UpdateACLSchema(**request_handler_args):
             for project in Project.objects.raw({"acl_schema": schema._id}):
                 project.save()
             request_handler_args['req'].context['result'] = schema.to_dict()
+            
 def DeleteACLSchema(**request_handler_args):
     authUser(request_handler_args['req'], request_handler_args['resp'], ['deleteACLSchema'])
     try:
@@ -299,7 +303,7 @@ def GetProjectUsers(**request_handler_args):
     try:
         project = Project.objects.get({"_id": ObjectId(request_handler_args['uri_fields']['id'])})
     except InvalidId as e:
-        raise falcon.HTTPBadRequest('Bad Request', str(e))
+        raise falcon.HTTPMissingParam('id')
     except Project.DoesNotExist:
         raise falcon.HTTPNotFound()
     else:
@@ -314,7 +318,7 @@ def UpdateProjectUsers(**request_handler_args):
     try:
         project = Project.objects.get({"_id": ObjectId(request_handler_args['uri_fields']['id'])})
     except InvalidId as e:
-        raise falcon.HTTPBadRequest('Bad Request', str(e))
+        raise falcon.HTTPMissingParam('id')
     except Project.DoesNotExist:
         raise falcon.HTTPNotFound()
     else:
@@ -367,14 +371,9 @@ def CreateFile(**request_handler_args):
                     elif doc['type'] == 'folder':
                         ProjectFS.CreateDirectory(path)
                     else:
-                        raise HTTPBadRequest('Bad Request', 'Type property of FS object must be either file or folder.')
-                except OSError as e:
+                        raise falcon.HTTPBadRequest('Bad Request', 'Type property of FS object must be either file or folder.')
+                except (IOError, OSError) as e:
                     raise falcon.HTTPInternalServerError('Internal Server Error', str(e))
-                except IOError as e:
-                    if e[0] == 13:
-                        raise falcon.HTTPForbidden('Forbidden', str(e))
-                    else:
-                        raise falcon.HTTPInternalServerError('Internal Server Error', str(e))
                 except KeyError:
                     raise falcon.HTTPBadRequest('Bad Request', 'FS Object is missing type property.')
                 try:
@@ -417,8 +416,6 @@ def SetACL(**request_handler_args):
                         try:
                             ACL.SetMatchedACL(path, matched_acl)
                         except ACL.error as e:
-                            if e[0] == 5:
-                                raise falcon.HTTPForbidden('Forbidden: File Permissions', 'The FSAPI does not have file level permisions to set the ACL.')
                             raise falcon.HTTPInternalServerError('Internal Server Error', e[2])
 
                         try:
