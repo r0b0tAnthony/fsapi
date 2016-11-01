@@ -75,12 +75,18 @@ class SpecServer():
             swagger_spec = json.loads(swagger_spec)
         except:
             raise Exception("Unable to parse the Swagger spec JSON document.")
-            
+
+        try:
+            version = swagger_spec['info']['version']
+        except Exception:
+            version = '3.0'
+            pass
+
         for k in swagger_spec['paths'].keys():
             for http_method in swagger_spec['paths'][k].keys():
                 if http_method == 'parameters':
                     continue
-                uri_fields, uri_template = compile_uri_template('/' + http_method.lower() + '/3.0' + k)
+                uri_fields, uri_template = compile_uri_template('/' + http_method.lower() + '/' + version + k)
                 self.routing_templates.append(repr(uri_template))
                 operationId = swagger_spec['paths'][k][http_method]['operationId']
                 self.routing_table[operationId] = {'uri_fields': uri_fields, 'uri_template': uri_template}
@@ -200,4 +206,3 @@ class SpecServer():
 
             ####### OUR JOB IS FINISHED - WHAT HAPPENS NEXT?
             # control returns to Falcon and Falcon returns the response object to the client
-
