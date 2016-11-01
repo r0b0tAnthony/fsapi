@@ -104,7 +104,7 @@ class ACL:
                 ace_type = ACL.GetAceType(ace[0][0])
                 ace_flags = ACL.GetInheritFlags(ace[0][1])
 
-                acl.append({'owner': ace_owner, 'mask': ace_mask, 'type': ace_type, 'flags': ace_flags})
+                acl.append({'owner': ace_owner, 'mask': ace_mask, 'type': ace_type, 'inherit': ace_flags})
 
             return {'owner': owner, 'acl': acl}
 
