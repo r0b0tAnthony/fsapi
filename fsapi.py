@@ -10,7 +10,51 @@ from bson.errors import InvalidId
 import pprint
 import json
 import datetime
+import logging
+from pythonjsonlogger import jsonlogger
 
+def SetupLogger(**request_handler_args):
+    req = request_handler_args['req']
+    class CustomJsonFormatter(jsonlogger.JsonFormatter):
+        def process_log_record(self, log_record):
+            log_record["uri"] = req.uri
+            log_record["client"] = req.remote_addr
+            log_record["timestamp"] = datetime.datetime.now().isoformat()
+            try:
+                log_record['loggedin_user'] = {'name': req.context['user'].username, 'id': str(req.context['user']._id)}
+            except KeyError:
+                pass
+            return super(CustomJsonFormatter, self).process_log_record(log_record)
+
+    logger = logging.getLogger(name = 'FSAPI')
+    logHandler = logging.FileHandler('fsapi.log')
+    formatter = CustomJsonFormatter('%(levelname)')
+    logHandler.setFormatter(formatter)
+    logger.setLevel(logging.DEBUG)
+    logger.addHandler(logHandler)
+
+    request_handler_args['req'].context['logger'] = logger
+    print("Path %s" % request_handler_args['req'].path)
+    print("uri %s" % request_handler_args['req'].uri)
+    print("relative uri %s" % request_handler_args['req'].relative_uri)
+    print("remote_addr %s" % request_handler_args['req'].remote_addr)
+    print("host %s" % request_handler_args['req'].host)
+    print "env"
+    pprint.pprint(request_handler_args['req'].env)
+def authUser(req, resp, permissions):
+    authHeader = req.get_header('Authorization')
+    if authHeader == None:
+        raise falcon.HTTPMissingHeader('Authorization')
+    try:
+        user = User.objects.get({"auth_b64": authHeader[6:]})
+        diff_perms = list(set(permissions) - set(User.valid_permissions))
+        if len(diff_perms) > 0:
+            raise falcon.HTTPForbidden('Forbidden', "%s does not have the required permissions: %s" % (user.username, ', '.join(diff_perms)))
+    except User.DoesNotExist:
+        raise falcon.HTTPUnauthorized('Unauthorized','Username and password does not exist.', ['Basic realm="WallyWorld"'])
+    else:
+        req.context['user'] = user
+        req.context['logger'].debug({'message': "'%s' logged in." % user.username})
 
 def ProcessJsonResp(**request_handler_args):
     if 'result' not in request_handler_args['req'].context:
@@ -52,8 +96,9 @@ def RequireJson(**request_handler_args):
             raise falcon.HTTPUnsupportedMediaType('This API only supports requests encoded as JSON.')
 
 def CreateUser(**request_handler_args):
-    authUser(request_handler_args['req'], request_handler_args['resp'], ['createUser'])
-    doc = request_handler_args['req'].context['doc']
+    req = request_handler_args['req']
+    authUser(req, request_handler_args['resp'], ['createUser'])
+    doc = req.context['doc']
     try:
         user = User(username = doc['username'], password = doc['password'], permissions = doc['permissions'], auth_b64 = User.GetAuthBase64(doc['username'], doc['password']))
     except KeyError as e:
@@ -62,7 +107,8 @@ def CreateUser(**request_handler_args):
         try:
             user.save()
             request_handler_args['resp'].status = falcon.HTTP_201
-            request_handler_args['req'].context['result'] = user.to_dict()
+            req.context['result'] = user.to_dict()
+            req.context['logger'].info({'action': 'createUser', 'message': "'%s' user with id of %s was created successfully" % (user.username, user._id)})
         except User.ValidationError as e:
             raise falcon.HTTPBadRequest("Validation Error", e.message)
         except User.DuplicateKeyError as e:
@@ -70,8 +116,9 @@ def CreateUser(**request_handler_args):
             raise falcon.HTTPConflict("Conflict", {"message":"User with username '%s' already exists." % user.username, "user": existing_user.to_dict()})
 
 def UpdateUser(**request_handler_args):
-    authUser(request_handler_args['req'], request_handler_args['resp'], ['createUser'])
-    doc = request_handler_args['req'].context['doc']
+    req = request_handler_args['req']
+    authUser(req, request_handler_args['resp'], ['createUser'])
+    doc = req.context['doc']
     try:
         user = User.objects.get({"_id": ObjectId(request_handler_args['uri_fields']['id'])})
     except InvalidId as e:
@@ -100,6 +147,7 @@ def UpdateUser(**request_handler_args):
             raise falcon.HTTPConflict("Conflict", {"message":"User with username '%s' already exists." % user.username, "user": existing_user.to_dict()})
         else:
             request_handler_args['req'].context['result'] = user.to_dict()
+            req.context['logger'].info({'action': 'updateUser', 'message': "'%s' user with id of %s was updated successfully." % (user.username, user._id)})
 
 def GetUsers(**request_handler_args):
     users = []
@@ -118,7 +166,8 @@ def GetUser(**request_handler_args):
         request_handler_args['req'].context['result'] = user.to_dict()
 
 def DeleteUser(**request_handler_args):
-    authUser(request_handler_args['req'], request_handler_args['resp'], ['deleteUser'])
+    req = request_handler_args['req']
+    authUser(req, request_handler_args['resp'], ['deleteUser'])
     try:
         user = User.objects.get({"_id": ObjectId(request_handler_args['uri_fields']['id'])})
     except InvalidId as e:
@@ -127,10 +176,12 @@ def DeleteUser(**request_handler_args):
         raise falcon.HTTPNotFound()
     else:
         user.delete()
+        req.context['logger'].info({'action': 'deleteUser', 'message': "'%s' user with id of %s was deleted successfully." % (user.username, user._id)})
 
 def CreateACLSchema(**request_handler_args):
-    authUser(request_handler_args['req'], request_handler_args['resp'], ['createACLSchema'])
-    doc = request_handler_args['req'].context['doc']
+    req = request_handler_args['req']
+    authUser(req, request_handler_args['resp'], ['createACLSchema'])
+    doc = req.context['doc']
     try:
         schema = Schema(name = doc['name'], schema = doc['schema'])
     except KeyError as e:
@@ -143,6 +194,7 @@ def CreateACLSchema(**request_handler_args):
         else:
             request_handler_args['resp'].status = falcon.HTTP_201
             request_handler_args['req'].context['result'] = schema.to_dict()
+            req.context['logger'].info({'action': 'createACLSchema', 'message': "'%s' ACLSchema with id of %s was created successfully." % (schema.name, schema._id)})
 
 def GetACLSchemas(**request_handler_args):
     schemas = []
@@ -161,8 +213,9 @@ def GetACLSchema(**request_handler_args):
         request_handler_args['req'].context['result'] = schema.to_dict()
 
 def UpdateACLSchema(**request_handler_args):
-    authUser(request_handler_args['req'], request_handler_args['resp'], ['createACLSchema'])
-    doc = request_handler_args['req'].context['doc']
+    req = request_handler_args['req']
+    authUser(req, request_handler_args['resp'], ['createACLSchema'])
+    doc = req.context['doc']
     try:
         schema = Schema.objects.get({"_id": ObjectId(request_handler_args['uri_fields']['id'])})
     except InvalidId as e:
@@ -184,9 +237,11 @@ def UpdateACLSchema(**request_handler_args):
             for project in Project.objects.raw({"acl_schema": schema._id}):
                 project.save()
             request_handler_args['req'].context['result'] = schema.to_dict()
+            req.context['logger'].info({'action': 'updateACLSchema', 'message': "'%s' ACLSchema with id of %s was updated successfully." % (schema.name, schema._id)})
 
 def DeleteACLSchema(**request_handler_args):
-    authUser(request_handler_args['req'], request_handler_args['resp'], ['deleteACLSchema'])
+    req = request_handler_args['req']
+    authUser(req, request_handler_args['resp'], ['deleteACLSchema'])
     try:
         schema = Schema.objects.get({"_id": ObjectId(request_handler_args['uri_fields']['id'])})
     except InvalidId as e:
@@ -196,12 +251,14 @@ def DeleteACLSchema(**request_handler_args):
     else:
         try:
             schema.delete()
+            req.context['logger'].info({'action': 'deleteACLSchema', 'message': "'%s' ACLSchema with id of %s was deleted successfully." % (schema.name, schema._id)})
         except Schema.OperationError as e:
             raise falcon.HTTPInternalServerError('Internal Server Error', e.message)
 
 def CreateProject(**request_handler_args):
-    authUser(request_handler_args['req'], request_handler_args['resp'], ['createProject'])
-    doc = request_handler_args['req'].context['doc']
+    req = request_handler_args['req']
+    authUser(req, request_handler_args['resp'], ['createProject'])
+    doc = req.context['doc']
     try:
         user_ids = []
         for x in range(len(doc['users'])):
@@ -236,6 +293,7 @@ def CreateProject(**request_handler_args):
             #pprint.pprint(project)
             request_handler_args['resp'].status = falcon.HTTP_201
             request_handler_args['req'].context['result'] = project.to_dict()
+            req.context['logger'].info({'action': 'createProject', 'message': "'%s' project with id of %s was created successfully." % (project.name, project._id)})
 
 def GetProjects(**request_handler_args):
     projects = []
@@ -254,8 +312,9 @@ def GetProject(**request_handler_args):
         request_handler_args['req'].context['result'] = project.to_dict()
 
 def UpdateProject(**request_handler_args):
-    authUser(request_handler_args['req'], request_handler_args['resp'], ['createProject'])
-    doc = request_handler_args['req'].context['doc']
+    req = request_handler_args['req']
+    authUser(req, request_handler_args['resp'], ['createProject'])
+    doc = req.context['doc']
     try:
         project = Project.objects.get({"_id": ObjectId(request_handler_args['uri_fields']['id'])})
     except InvalidId as e:
@@ -290,6 +349,7 @@ def UpdateProject(**request_handler_args):
         else:
             try:
                 project.save()
+                req.context['logger'].info({'action': 'updateProject', 'message': "'%s' project with id of %s was updated successfully." % (project.name, project._id)})
             except project.ValidationError as e:
                 raise falcon.HTTPBadRequest("Validation Error", e.message)
             else:
@@ -297,7 +357,8 @@ def UpdateProject(**request_handler_args):
                 request_handler_args['req'].context['result'] = project.to_dict()
 
 def DeleteProject(**request_handler_args):
-    authUser(request_handler_args['req'], request_handler_args['resp'], ['deleteProject'])
+    req = request_handler_args['req']
+    authUser(req, request_handler_args['resp'], ['deleteProject'])
     try:
         project = Project.objects.get({"_id": ObjectId(request_handler_args['uri_fields']['id'])})
     except InvalidId as e:
@@ -306,6 +367,7 @@ def DeleteProject(**request_handler_args):
         raise falcon.HTTPNotFound()
     else:
         project.delete()
+        req.context['logger'].info({'action': 'deleteProject', 'message': "'%s' project with id of %s was updated successfully." % (project.name, project._id)})
 
 def GetProjectUsers(**request_handler_args):
     try:
@@ -321,8 +383,9 @@ def GetProjectUsers(**request_handler_args):
         request_handler_args['req'].context['result'] = users
 
 def UpdateProjectUsers(**request_handler_args):
-    authUser(request_handler_args['req'], request_handler_args['resp'], ['createProject'])
-    doc = request_handler_args['req'].context['doc']
+    req = request_handler_args['req']
+    authUser(req, request_handler_args['resp'], ['createProject'])
+    doc = req.context['doc']
     try:
         project = Project.objects.get({"_id": ObjectId(request_handler_args['uri_fields']['id'])})
     except InvalidId as e:
@@ -355,11 +418,13 @@ def UpdateProjectUsers(**request_handler_args):
                 for x in range(len(project.users)):
                     users.append(project.users[x].to_dict())
                 request_handler_args['req'].context['result'] = users
+                req.context['logger'].info({'action': 'updateProjectUsers', 'message': "'%s' project with id of %s users were updated successfully." % (project.name, project._id)})
 
 def CreateFile(**request_handler_args):
-    authUser(request_handler_args['req'], request_handler_args['resp'], ['createFile'])
-    user = request_handler_args['req'].context['user']
-    doc = request_handler_args['req'].context['doc']
+    req = request_handler_args['req']
+    authUser(req, request_handler_args['resp'], ['createFile'])
+    user = req.context['user']
+    doc = req.context['doc']
     try:
         project = Project.objects.get({"_id": ObjectId(request_handler_args['uri_fields']['id'])})
     except InvalidId as e:
@@ -393,15 +458,17 @@ def CreateFile(**request_handler_args):
                             'modified': ProjectFS.GetMTime(path),
                             'accessed': ProjectFS.GetATime(path)
                     }
+                    req.context['logger'].info({'action': 'createFile', 'message': "File/Folder '%s' was created for project %s(%s)" % (path, project.name, project._id)})
                 except ACL.error as e:
                     raise falcon.HTTPInternalServerError('Internal Server Error', str(e))
             else:
                 raise falcon.HTTPForbidden('Forbidden', "%s is not assigned to this project." % user.username)
 
 def SetACL(**request_handler_args):
-    authUser(request_handler_args['req'], request_handler_args['resp'], ['setACL'])
-    user = request_handler_args['req'].context['user']
-    doc = request_handler_args['req'].context['doc']
+    req = request_handler_args['req']
+    authUser(req, request_handler_args['resp'], ['setACL'])
+    user = req.context['user']
+    doc = req.context['doc']
     try:
         project = Project.objects.get({"_id": ObjectId(request_handler_args['uri_fields']['id'])})
     except InvalidId as e:
@@ -439,13 +506,14 @@ def SetACL(**request_handler_args):
                     else:
                         request_handler_args['resp'].status = falcon.HTTP_202
                         try:
-                            request_handler_args['req'].context['result'] = {
+                            req.context['result'] = {
                                     'path': path,
                                     'security': ACL.GetACL(path),
                                     'created': ProjectFS.GetCTime(path),
                                     'modified': ProjectFS.GetMTime(path),
                                     'accessed': ProjectFS.GetATime(path)
                             }
+                            req.context['logger'].info({'action': 'createFile', 'message': "File/Folder '%s' was created for project %s(%s)" % (path, project.name, project._id)})
                         except ACL.error as e:
                             raise falcon.HTTPInternalServerError('Internal Server Error', str(e))
             else:
@@ -454,20 +522,6 @@ def SetACL(**request_handler_args):
 def GetDoc(**request_handler_args):
     swagger_doc = open('swagger.json', 'r')
     request_handler_args['resp'].body = swagger_doc.read()
-
-def authUser(req, resp, permissions):
-    authHeader = req.get_header('Authorization')
-    if authHeader == None:
-        raise falcon.HTTPMissingHeader('Authorization')
-    try:
-        user = User.objects.get({"auth_b64": authHeader[6:]})
-        diff_perms = list(set(permissions) - set(User.valid_permissions))
-        if len(diff_perms) > 0:
-            raise falcon.HTTPForbidden('Forbidden', "%s does not have the required permissions: %s" % (user.username, ', '.join(diff_perms)))
-    except User.DoesNotExist:
-        raise falcon.HTTPUnauthorized('Unauthorized','Username and password does not exist.', ['Basic realm="WallyWorld"'])
-    else:
-        req.context['user'] = user
 
 def not_found(**request_handler_args):
     raise falcon.HTTPNotFound('Not found.', 'Requested resource not found.')
@@ -480,26 +534,26 @@ def im_a_teapot(**request_handler_args):
     resp.status = status.HTTP_IM_A_TEAPOT
 
 operation_handlers = {
-    'createUser':                   [RequireJson, ProcessJsonReq, CreateUser, ProcessJsonResp],
-    'updateUser':                   [RequireJson, ProcessJsonReq, UpdateUser, ProcessJsonResp],
-    'deleteUser':                   [DeleteUser, ProcessJsonResp],
-    'getUser':                      [GetUser, ProcessJsonResp],
-    'getUsers':                     [GetUsers, ProcessJsonResp],
-    'getProjects':                  [GetProjects, ProcessJsonResp],
-    'createProject':                [RequireJson, ProcessJsonReq,CreateProject, ProcessJsonResp],
-    'getProject':                   [GetProject, ProcessJsonResp],
-    'updateProject':                [RequireJson, ProcessJsonReq, UpdateProject, ProcessJsonResp],
-    'deleteProject':                [DeleteProject, ProcessJsonResp],
-    'createFile':                   [RequireJson, ProcessJsonReq, CreateFile, ProcessJsonResp],
-    'setACL':                       [RequireJson, ProcessJsonReq, SetACL, ProcessJsonResp],
-    'getProjectUsers':              [GetProjectUsers, ProcessJsonResp],
-    'updateProjectUsers':           [RequireJson, ProcessJsonReq, UpdateProjectUsers, ProcessJsonResp],
-    'createACLSchema':              [RequireJson, ProcessJsonReq, CreateACLSchema, ProcessJsonResp],
-    'getACLSchemas':                [GetACLSchemas, ProcessJsonResp],
-    'getACLSchema':                 [GetACLSchema, ProcessJsonResp],
-    'updateACLSchema':              [RequireJson, ProcessJsonReq, UpdateACLSchema, ProcessJsonResp],
-    'deleteACLSchema':              [DeleteACLSchema, ProcessJsonResp],
-    'getDoc':                       [GetDoc, ProcessJsonResp]
+    'createUser':                   [SetupLogger, RequireJson, ProcessJsonReq, CreateUser, ProcessJsonResp],
+    'updateUser':                   [SetupLogger, RequireJson, ProcessJsonReq, UpdateUser, ProcessJsonResp],
+    'deleteUser':                   [SetupLogger, DeleteUser, ProcessJsonResp],
+    'getUser':                      [SetupLogger, GetUser, ProcessJsonResp],
+    'getUsers':                     [SetupLogger, SetupLogger, GetUsers, ProcessJsonResp],
+    'getProjects':                  [SetupLogger, GetProjects, ProcessJsonResp],
+    'createProject':                [SetupLogger, RequireJson, ProcessJsonReq,CreateProject, ProcessJsonResp],
+    'getProject':                   [SetupLogger, GetProject, ProcessJsonResp],
+    'updateProject':                [SetupLogger, RequireJson, ProcessJsonReq, UpdateProject, ProcessJsonResp],
+    'deleteProject':                [SetupLogger, DeleteProject, ProcessJsonResp],
+    'createFile':                   [SetupLogger, RequireJson, ProcessJsonReq, CreateFile, ProcessJsonResp],
+    'setACL':                       [SetupLogger, RequireJson, ProcessJsonReq, SetACL, ProcessJsonResp],
+    'getProjectUsers':              [SetupLogger, GetProjectUsers, ProcessJsonResp],
+    'updateProjectUsers':           [SetupLogger, RequireJson, ProcessJsonReq, UpdateProjectUsers, ProcessJsonResp],
+    'createACLSchema':              [SetupLogger, RequireJson, ProcessJsonReq, CreateACLSchema, ProcessJsonResp],
+    'getACLSchemas':                [SetupLogger, GetACLSchemas, ProcessJsonResp],
+    'getACLSchema':                 [SetupLogger, GetACLSchema, ProcessJsonResp],
+    'updateACLSchema':              [SetupLogger, RequireJson, ProcessJsonReq, UpdateACLSchema, ProcessJsonResp],
+    'deleteACLSchema':              [SetupLogger, DeleteACLSchema, ProcessJsonResp],
+    'getDoc':                       [SetupLogger, GetDoc, ProcessJsonResp]
 }
 connect("mongodb://localhost:27017/fsapi", alias='fsapi-app')
 
