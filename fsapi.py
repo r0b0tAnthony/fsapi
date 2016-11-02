@@ -79,10 +79,18 @@ def UpdateUser(**request_handler_args):
     except User.DoesNotExist:
         raise falcon.HTTPNotFound()
     else:
-        user.username = doc['username']
-        user.password = doc['password']
-        user.permissions = doc['permissions']
-        user.auth_b64 = User.GetAuthBase64(doc['username'], doc['password'])
+        try:
+            user.username = doc['username']
+            user.permissions = doc['permissions']
+        except KeyError as e:
+            raise falcon.HTTPMissingParam(str(e))
+        try:
+            user.password = doc['password']
+        except KeyError:
+            user.auth_b64 = User.GetAuthBase64(doc['username'], user.password)
+            pass
+        else:
+            user.auth_b64 = User.GetAuthBase64(doc['username'], doc['password'])
         try:
             user.save()
         except User.ValidationError as e:
@@ -176,7 +184,7 @@ def UpdateACLSchema(**request_handler_args):
             for project in Project.objects.raw({"acl_schema": schema._id}):
                 project.save()
             request_handler_args['req'].context['result'] = schema.to_dict()
-            
+
 def DeleteACLSchema(**request_handler_args):
     authUser(request_handler_args['req'], request_handler_args['resp'], ['deleteACLSchema'])
     try:
@@ -443,6 +451,10 @@ def SetACL(**request_handler_args):
             else:
                 raise falcon.HTTPForbidden('Forbidden', "%s is not assigned to this project." % user.username)
 
+def GetDoc(**request_handler_args):
+    swagger_doc = open('swagger.json', 'r')
+    request_handler_args['resp'].body = swagger_doc.read()
+
 def authUser(req, resp, permissions):
     authHeader = req.get_header('Authorization')
     if authHeader == None:
@@ -487,6 +499,7 @@ operation_handlers = {
     'getACLSchema':                 [GetACLSchema, ProcessJsonResp],
     'updateACLSchema':              [RequireJson, ProcessJsonReq, UpdateACLSchema, ProcessJsonResp],
     'deleteACLSchema':              [DeleteACLSchema, ProcessJsonResp],
+    'getDoc':                       [GetDoc, ProcessJsonResp]
 }
 connect("mongodb://localhost:27017/fsapi", alias='fsapi-app')
 
