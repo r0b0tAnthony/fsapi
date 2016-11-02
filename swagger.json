@@ -752,6 +752,17 @@
                     "format": "int64"
                 }
             ]
+        },
+        "/doc": {
+            "get": {
+                "operationId": "getDoc",
+                "description": "Get Swagger Doc",
+                "responses": {
+                    "200": {
+                        "description": "Successful Request"
+                    }
+                }
+            }
         }
     },
     "definitions": {
@@ -862,12 +873,12 @@
                     }
                 },
                 "acl_schema": {
-                    "$ref": "#/definitions/ACLSchema"
+                    "type": "string"
                 },
                 "users": {
                     "type": "array",
                     "items": {
-                        "$ref": "#/definitions/User"
+                        "type": "string"
                     },
                     "minItems": 1
                 }
