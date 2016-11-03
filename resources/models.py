@@ -75,12 +75,19 @@ class Schema(MongoModel):
         ACL.GetExpandedDACL(self.schema, self.expanded_schema)
 
     def to_dict(self):
-        return {
+        schema_dict = {
                 "name": self.name,
                 "schema": self.schema,
                 "modified": self.modified.isoformat(),
                 "_id": str(self._id)
         }
+
+        try:
+            schema_dict['uri'] = self.uri
+        except AttributeError:
+            pass
+
+        return schema_dict
 
 class User(MongoModel):
     username = fields.CharField(min_length = 3, validators = [ValidateName], required = True, unique = True)
@@ -111,11 +118,17 @@ class User(MongoModel):
         return base64.b64encode("%s:%s" % (username, password))
 
     def to_dict(self):
-        return {
+        user_dict = {
             'username': self.username,
             'permissions': self.permissions,
             '_id': str(self._id)
         }
+        try:
+            user_dict['uri'] = self.uri
+        except AttributeError:
+            pass
+
+        return user_dict
 
 class Project(MongoModel):
     name = fields.CharField(min_length=3, validators=[ValidateName], required = True)
@@ -139,10 +152,15 @@ class Project(MongoModel):
         user_ids = []
         for x in range(len(self.users)):
             user_ids.append(str(self.users[x]._id))
-        return {
+        project_dict = {
             'id': str(self._id),
             'name': self.name,
             'users': user_ids,
             'acl_schema': str(self.acl_schema._id),
             'paths': self.paths
         }
+        try:
+            project_dict['uri'] = self.uri
+        except AttributeError:
+            pass
+        return project_dict

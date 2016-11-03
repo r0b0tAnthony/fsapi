@@ -12,6 +12,8 @@ import json
 import datetime
 import logging
 from pythonjsonlogger import jsonlogger
+from urlparse import urljoin
+
 
 def SetupLogger(**request_handler_args):
     req = request_handler_args['req']
@@ -34,13 +36,7 @@ def SetupLogger(**request_handler_args):
     logger.addHandler(logHandler)
 
     request_handler_args['req'].context['logger'] = logger
-    print("Path %s" % request_handler_args['req'].path)
-    print("uri %s" % request_handler_args['req'].uri)
-    print("relative uri %s" % request_handler_args['req'].relative_uri)
-    print("remote_addr %s" % request_handler_args['req'].remote_addr)
-    print("host %s" % request_handler_args['req'].host)
-    print "env"
-    pprint.pprint(request_handler_args['req'].env)
+
 def authUser(req, resp, permissions):
     authHeader = req.get_header('Authorization')
     if authHeader == None:
@@ -107,6 +103,9 @@ def CreateUser(**request_handler_args):
         try:
             user.save()
             request_handler_args['resp'].status = falcon.HTTP_201
+            print req.uri
+            user.uri = req.uri + '/' + str(user._id)
+            request_handler_args['resp'].location = user.uri
             req.context['result'] = user.to_dict()
             req.context['logger'].info({'action': 'createUser', 'message': "'%s' user with id of %s was created successfully" % (user.username, user._id)})
         except User.ValidationError as e:
@@ -146,12 +145,15 @@ def UpdateUser(**request_handler_args):
             existing_user = User.objects.get({"username": user.username})
             raise falcon.HTTPConflict("Conflict", {"message":"User with username '%s' already exists." % user.username, "user": existing_user.to_dict()})
         else:
+            user.uri = req.uri
+            request_handler_args['resp'].location = user.uri
             request_handler_args['req'].context['result'] = user.to_dict()
             req.context['logger'].info({'action': 'updateUser', 'message': "'%s' user with id of %s was updated successfully." % (user.username, user._id)})
 
 def GetUsers(**request_handler_args):
     users = []
     for user in User.objects.all():
+        user.uri = request_handler_args['req'].uri + '/' + str(user._id)
         users.append(user.to_dict())
     request_handler_args['req'].context['result'] = users
 
@@ -163,6 +165,8 @@ def GetUser(**request_handler_args):
     except User.DoesNotExist:
         raise falcon.HTTPNotFound()
     else:
+        user.uri = request_handler_args['req'].uri
+        request_handler_args['resp'].location = user.uri
         request_handler_args['req'].context['result'] = user.to_dict()
 
 def DeleteUser(**request_handler_args):
@@ -193,12 +197,15 @@ def CreateACLSchema(**request_handler_args):
             raise falcon.HTTPBadRequest("Validation Error", e.message)
         else:
             request_handler_args['resp'].status = falcon.HTTP_201
+            schema.uri = req.uri + '/' + str(schema._id)
+            request_handler_args['resp'].location = schema.uri
             request_handler_args['req'].context['result'] = schema.to_dict()
             req.context['logger'].info({'action': 'createACLSchema', 'message': "'%s' ACLSchema with id of %s was created successfully." % (schema.name, schema._id)})
 
 def GetACLSchemas(**request_handler_args):
     schemas = []
     for schema in Schema.objects.all():
+        schema.uri = request_handler_args['req'].uri + '/' + str(schema._id)
         schemas.append(schema.to_dict())
     request_handler_args['req'].context['result'] = schemas
 
@@ -210,6 +217,8 @@ def GetACLSchema(**request_handler_args):
     except Schema.DoesNotExist:
         raise falcon.HTTPNotFound()
     else:
+        user.uri = request_handler_args['req'].uri
+        request_handler_args['resp'].location = schema.uri
         request_handler_args['req'].context['result'] = schema.to_dict()
 
 def UpdateACLSchema(**request_handler_args):
@@ -236,6 +245,8 @@ def UpdateACLSchema(**request_handler_args):
         else:
             for project in Project.objects.raw({"acl_schema": schema._id}):
                 project.save()
+            schema.uri = req.uri + '/' + str(schema._id)
+            request_handler_args['resp'].location = schema.uri
             request_handler_args['req'].context['result'] = schema.to_dict()
             req.context['logger'].info({'action': 'updateACLSchema', 'message': "'%s' ACLSchema with id of %s was updated successfully." % (schema.name, schema._id)})
 
@@ -292,12 +303,15 @@ def CreateProject(**request_handler_args):
         else:
             #pprint.pprint(project)
             request_handler_args['resp'].status = falcon.HTTP_201
+            project.uri = req.uri + '/' + str(project._id)
+            request_handler_args['resp'].location = project.uri
             request_handler_args['req'].context['result'] = project.to_dict()
             req.context['logger'].info({'action': 'createProject', 'message': "'%s' project with id of %s was created successfully." % (project.name, project._id)})
 
 def GetProjects(**request_handler_args):
     projects = []
     for project in Project.objects.all():
+        project.uri = request_handler_args['req'].uri + '/' + str(project._id)
         projects.append(project.to_dict())
     request_handler_args['req'].context['result'] = projects
 
@@ -309,6 +323,8 @@ def GetProject(**request_handler_args):
     except Project.DoesNotExist:
         raise falcon.HTTPNotFound()
     else:
+        project.uri = request_handler_args['req'].uri
+        request_handler_args['resp'].location = project.uri
         request_handler_args['req'].context['result'] = project.to_dict()
 
 def UpdateProject(**request_handler_args):
@@ -354,6 +370,8 @@ def UpdateProject(**request_handler_args):
                 raise falcon.HTTPBadRequest("Validation Error", e.message)
             else:
                 #pprint.pprint(project)
+                project.uri = req.uri + '/' + str(project._id)
+                request_handler_args['resp'].location = project.uri
                 request_handler_args['req'].context['result'] = project.to_dict()
 
 def DeleteProject(**request_handler_args):
