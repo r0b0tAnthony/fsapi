@@ -1,7 +1,7 @@
 {
     "swagger": "2.0",
     "info": {
-        "version": "0.5",
+        "version": "0.6",
         "title": "File Creation Service",
         "description": "**User Name and Password**\n* User Name: `user`\n* Password: `pass`"
     },
@@ -789,8 +789,7 @@
             "type": "object",
             "required": [
                 "name",
-                "permissions",
-                "id"
+                "permissions"
             ],
             "properties": {
                 "name": {
@@ -812,6 +811,11 @@
                 },
                 "id": {
                     "type": "string"
+                },
+                "uri": {
+                    "type": "string",
+                    "title": "URI",
+                    "description": "A URI to User Resource"
                 }
             }
         },
@@ -822,9 +826,6 @@
                     "$ref": "#/definitions/NewProject"
                 },
                 {
-                    "required": [
-                        "id"
-                    ],
                     "properties": {
                         "id": {
                             "type": "string"
@@ -836,6 +837,11 @@
                         "modified": {
                             "type": "string",
                             "format": "date-time"
+                        },
+                        "uri": {
+                            "type": "string",
+                            "title": "URI",
+                            "description": "A URI to Project Resource"
                         }
                     }
                 }
@@ -891,9 +897,6 @@
                     "$ref": "#/definitions/NewACLSchema"
                 },
                 {
-                    "required": [
-                        "id"
-                    ],
                     "properties": {
                         "id": {
                             "type": "string"
@@ -905,6 +908,11 @@
                         "modified": {
                             "type": "string",
                             "format": "date-time"
+                        },
+                        "uri": {
+                            "type": "string",
+                            "title": "URI",
+                            "description": "A URI to ACLSchema Resource"
                         }
                     }
                 }
