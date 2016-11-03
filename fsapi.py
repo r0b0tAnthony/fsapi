@@ -11,8 +11,8 @@ import pprint
 import json
 import datetime
 import logging
+from logging.handlers import TimedRotatingFileHandler
 from pythonjsonlogger import jsonlogger
-from urlparse import urljoin
 
 
 def SetupLogger(**request_handler_args):
@@ -29,7 +29,7 @@ def SetupLogger(**request_handler_args):
             return super(CustomJsonFormatter, self).process_log_record(log_record)
 
     logger = logging.getLogger(name = 'FSAPI')
-    logHandler = logging.FileHandler('fsapi.log')
+    logHandler = TimedRotatingFileHandler('fsapi.log', when = 'd', interval= 1, backupCount=14)
     formatter = CustomJsonFormatter('%(levelname)')
     logHandler.setFormatter(formatter)
     logger.setLevel(logging.DEBUG)
@@ -47,10 +47,11 @@ def authUser(req, resp, permissions):
         if len(diff_perms) > 0:
             raise falcon.HTTPForbidden('Forbidden', "%s does not have the required permissions: %s" % (user.username, ', '.join(diff_perms)))
     except User.DoesNotExist:
+        req.context['logger'].debug({'message': 'Failed login attempt', 'action': 'login'})
         raise falcon.HTTPUnauthorized('Unauthorized','Username and password does not exist.', ['Basic realm="WallyWorld"'])
     else:
         req.context['user'] = user
-        req.context['logger'].debug({'message': "'%s' logged in." % user.username})
+        req.context['logger'].debug({'message': "'%s' logged in." % user.username, 'action': 'login'})
 
 def ProcessJsonResp(**request_handler_args):
     if 'result' not in request_handler_args['req'].context:
@@ -464,6 +465,7 @@ def CreateFile(**request_handler_args):
                     else:
                         raise falcon.HTTPBadRequest('Bad Request', 'Type property of FS object must be either file or folder.')
                 except (IOError, OSError) as e:
+                    req.context['logger'].error({'action': 'createFile', 'message': str(e)})
                     raise falcon.HTTPInternalServerError('Internal Server Error', str(e))
                 except KeyError:
                     raise falcon.HTTPBadRequest('Bad Request', 'FS Object is missing type property.')
@@ -478,6 +480,7 @@ def CreateFile(**request_handler_args):
                     }
                     req.context['logger'].info({'action': 'createFile', 'message': "File/Folder '%s' was created for project %s(%s)" % (path, project.name, project._id)})
                 except ACL.error as e:
+                    req.context['logger'].error({'action': 'createFile', 'message': str(e)})
                     raise falcon.HTTPInternalServerError('Internal Server Error', str(e))
             else:
                 raise falcon.HTTPForbidden('Forbidden', "%s is not assigned to this project." % user.username)
@@ -500,15 +503,14 @@ def SetACL(**request_handler_args):
                 try:
                     matched_acl = ProjectFS.GetMatchACLPath(doc['path'], doc['platform'], project.acl_expanded, project.acl_expanded_depth)
                     path = ProjectFS.TranslatePath(doc['path'], doc['platform'], project.paths)
-                except ValueError as e:
-                    raise falcon.HTTPBadRequest("Bad Request: Invalid Value", e.message)
-                except KeyError as e:
+                except (KeyError, ValueError) as e:
                     raise falcon.HTTPBadRequest('Bad Request: Missing Key', e.message)
                 else:
                     if matched_acl != None:
                         try:
                             ACL.SetMatchedACL(path, matched_acl)
                         except ACL.error as e:
+                            req.context['logger'].error({'action': 'setACL', 'message': e[2]})
                             raise falcon.HTTPInternalServerError('Internal Server Error', e[2])
 
                         try:
@@ -520,6 +522,7 @@ def SetACL(**request_handler_args):
                                     'accessed': ProjectFS.GetATime(path)
                             }
                         except ACL.error as e:
+                            req.context['logger'].error({'action': 'setACL', 'message': str(e)})
                             raise falcon.HTTPInternalServerError('Internal Server Error', str(e))
                     else:
                         request_handler_args['resp'].status = falcon.HTTP_202
@@ -533,6 +536,7 @@ def SetACL(**request_handler_args):
                             }
                             req.context['logger'].info({'action': 'createFile', 'message': "File/Folder '%s' was created for project %s(%s)" % (path, project.name, project._id)})
                         except ACL.error as e:
+                            req.context['logger'].error({'action': 'setACL', 'message': str(e)})
                             raise falcon.HTTPInternalServerError('Internal Server Error', str(e))
             else:
                 raise falcon.HTTPForbidden('Forbidden', "%s is not assigned to this project." % user.username)
@@ -540,16 +544,6 @@ def SetACL(**request_handler_args):
 def GetDoc(**request_handler_args):
     swagger_doc = open('swagger.json', 'r')
     request_handler_args['resp'].body = swagger_doc.read()
-
-def not_found(**request_handler_args):
-    raise falcon.HTTPNotFound('Not found.', 'Requested resource not found.')
-
-def forbidden(**request_handler_args):
-    raise falcon.HTTPForbidden('Forbidden', 'You are forbidden from accessing this.')
-
-def im_a_teapot(**request_handler_args):
-    resp = request_handler_args['resp']
-    resp.status = status.HTTP_IM_A_TEAPOT
 
 operation_handlers = {
     'createUser':                   [SetupLogger, RequireJson, ProcessJsonReq, CreateUser, ProcessJsonResp],
