@@ -1,7 +1,6 @@
 import falcon
 import falcon.status_codes as status
 from serve_swagger import SpecServer
-from waitress import serve
 from pymodm import connect, context_managers
 from resources.models import User, Project, Schema
 from resources.fs import ACL, ProjectFS
@@ -13,7 +12,12 @@ import datetime
 import logging
 from logging.handlers import TimedRotatingFileHandler
 from pythonjsonlogger import jsonlogger
+from waitress import serve
+import os
+import sys
 
+def get_script_path():
+    return os.path.dirname(os.path.realpath(sys.argv[0]))
 
 def SetupLogger(**request_handler_args):
     req = request_handler_args['req']
@@ -567,14 +571,29 @@ operation_handlers = {
     'deleteACLSchema':              [SetupLogger, DeleteACLSchema, ProcessJsonResp],
     'getDoc':                       [SetupLogger, GetDoc, ProcessJsonResp]
 }
+'''
+def setupAPI():
+
+    connect("mongodb://localhost:27017/fsapi", alias='fsapi-app')
+
+    api = application = falcon.API()
+    server = SpecServer(operation_handlers=operation_handlers)
+    with open(get_script_path() + '\\swagger.json') as f:
+        server.load_spec_swagger(f.read())
+    api.add_sink(server, r'/')
+    return api
+    #serve(api, port='8080', ident='')
+'''
 connect("mongodb://localhost:27017/fsapi", alias='fsapi-app')
 
 api = application = falcon.API()
 server = SpecServer(operation_handlers=operation_handlers)
-with open('swagger.json') as f:
+with open(get_script_path() + '\\swagger.json') as f:
     server.load_spec_swagger(f.read())
 api.add_sink(server, r'/')
-serve(api, host='0.0.0.0', port=8080)
+serve(api, port='8080', ident='')
+
+
 """
 to test:
 gunicorn -b 127.0.0.1:8001 petstore:application
