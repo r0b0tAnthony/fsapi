@@ -2,7 +2,7 @@
     "swagger": "2.0",
     "info": {
         "version": "0.6",
-        "title": "File Creation Service",
+        "title": "fsapi",
         "description": "**User Name and Password**\n* User Name: `user`\n* Password: `pass`"
     },
     "basePath": "/api",
