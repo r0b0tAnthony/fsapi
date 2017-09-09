@@ -1,1131 +1,1136 @@
 {
-    "swagger": "2.0",
-    "info": {
-        "version": "0.6",
-        "title": "fsapi",
-        "description": "**User Name and Password**\n* User Name: `user`\n* Password: `pass`"
-    },
-    "basePath": "/api",
-    "schemes": [
-        "http"
-    ],
-    "consumes": [
-        "application/json"
-    ],
-    "produces": [
-        "application/json"
-    ],
-    "security": [
-        {
-            "basic_auth": []
-        }
-    ],
-    "paths": {
-        "/users": {
-            "post": {
-                "tags": [
-                    "Users"
-                ],
-                "operationId": "createUser",
-                "description": "Creates `user` object.\nDoes **require** createUser permission.\n",
-                "parameters": [
-                    {
-                        "name": "body",
-                        "in": "body",
-                        "required": true,
-                        "schema": {
-                            "$ref": "#/definitions/NewUser"
-                        }
-                    }
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "responses": {
-                    "201": {
-                        "description": "Created `User` Object",
-                        "schema": {
-                            "$ref": "#/definitions/User"
-                        }
-                    },
-                    "400": {
-                        "description": "Bad Request",
-                        "schema": {
-                            "$ref": "#/definitions/Error"
-                        }
-                    },
-                    "409": {
-                        "description": "Conflict, Username Already Exists",
-                        "schema": {
-                            "$ref": "#/definitions/Error"
-                        }
-                    }
-                },
-                "security": [
-                    {
-                        "basic_auth": []
-                    },
-                    {
-                        "createUserSecurity": []
-                    }
-                ]
-            },
-            "get": {
-                "tags": [
-                    "Users"
-                ],
-                "operationId": "getUsers",
-                "description": "Gets all registered `User` objects.\n",
-                "responses": {
-                    "200": {
-                        "description": "Successful Response",
-                        "schema": {
-                            "type": "array",
-                            "items": {
-                                "$ref": "#/definitions/User"
-                            }
-                        }
-                    }
-                }
-            }
-        },
-        "/users/{id}": {
-            "get": {
-                "tags": [
-                    "Users"
-                ],
-                "description": "Get specified `User` object",
-                "operationId": "getUser",
-                "responses": {
-                    "200": {
-                        "description": "Successful Response",
-                        "schema": {
-                            "type": "array",
-                            "items": {
-                                "$ref": "#/definitions/User"
-                            }
-                        }
-                    },
-                    "400": {
-                        "description": "Bad Request",
-                        "schema": {
-                            "$ref": "#/definitions/Error"
-                        }
-                    },
-                    "404": {
-                        "description": "User Not Found"
-                    }
-                }
-            },
-            "delete": {
-                "tags": [
-                    "Users"
-                ],
-                "description": "Delete specified `User` object",
-                "operationId": "deleteUser",
-                "responses": {
-                    "200": {
-                        "description": "User Deleted"
-                    },
-                    "400": {
-                        "description": "Bad Request",
-                        "schema": {
-                            "$ref": "#/definitions/Error"
-                        }
-                    },
-                    "404": {
-                        "description": "User Not Found"
-                    }
-                },
-                "security": [
-                    {
-                        "deleteUserSecurity": []
-                    },
-                    {
-                        "basic_auth": []
-                    }
-                ]
-            },
-            "put": {
-                "tags": [
-                    "Users"
-                ],
-                "description": "Update specified `User` object",
-                "operationId": "updateUser",
-                "parameters": [
-                    {
-                        "name": "body",
-                        "in": "body",
-                        "description": "JSON User Object",
-                        "required": true,
-                        "schema": {
-                            "$ref": "#/definitions/User"
-                        }
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "User object updated"
-                    },
-                    "400": {
-                        "description": "Bad Request",
-                        "schema": {
-                            "$ref": "#/definitions/Error"
-                        }
-                    },
-                    "404": {
-                        "description": "User Not Found"
-                    },
-                    "409": {
-                        "description": "Conflict, Username Already Exists",
-                        "schema": {
-                            "$ref": "#/definitions/Error"
-                        }
-                    }
-                },
-                "security": [
-                    {
-                        "createUserSecurity": []
-                    },
-                    {
-                        "basic_auth": []
-                    }
-                ]
-            },
-            "parameters": [
-                {
-                    "name": "id",
-                    "in": "path",
-                    "required": true,
-                    "type": "integer",
-                    "format": "int64"
-                }
-            ]
-        },
-        "/projects": {
-            "get": {
-                "tags": [
-                    "Projects"
-                ],
-                "description": "Get registered `Project` objects",
-                "operationId": "getProjects",
-                "responses": {
-                    "200": {
-                        "description": "Successful Response",
-                        "schema": {
-                            "type": "array",
-                            "items": {
-                                "$ref": "#/definitions/Project"
-                            }
-                        }
-                    }
-                }
-            },
-            "post": {
-                "tags": [
-                    "Projects"
-                ],
-                "description": "Create new `Project` object",
-                "operationId": "createProject",
-                "parameters": [
-                    {
-                        "name": "body",
-                        "in": "body",
-                        "description": "JSON Project Object",
-                        "required": true,
-                        "schema": {
-                            "$ref": "#/definitions/NewProject"
-                        }
-                    }
-                ],
-                "responses": {
-                    "201": {
-                        "description": "Created `Project` Object Successful",
-                        "schema": {
-                            "$ref": "#/definitions/Project"
-                        }
-                    },
-                    "400": {
-                        "description": "Bad Request / Missing Param",
-                        "schema": {
-                            "$ref": "#/definitions/Error"
-                        }
-                    },
-                    "404": {
-                        "description": "User or ACL Schema Not Found"
-                    }
-                },
-                "security": [
-                    {
-                        "createProjectSecurity": []
-                    },
-                    {
-                        "basic_auth": []
-                    }
-                ]
-            }
-        },
-        "/projects/{id}": {
-            "get": {
-                "tags": [
-                    "Projects"
-                ],
-                "description": "Get specified `Project` Object",
-                "operationId": "getProject",
-                "parameters": [
-                    {
-                        "name": "id",
-                        "in": "path",
-                        "required": true,
-                        "type": "integer",
-                        "format": "int64"
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "Successful Response",
-                        "schema": {
-                            "$ref": "#/definitions/Project"
-                        }
-                    }
-                },
-                "security": [
-                    {
-                        "basic_auth": []
-                    }
-                ]
-            },
-            "put": {
-                "tags": [
-                    "Projects"
-                ],
-                "operationId": "updateProject",
-                "description": "Update specified `Project` Object",
-                "parameters": [
-                    {
-                        "name": "id",
-                        "in": "path",
-                        "required": true,
-                        "type": "integer",
-                        "format": "int64"
-                    },
-                    {
-                        "name": "body",
-                        "in": "body",
-                        "description": "JSON Project Object",
-                        "required": true,
-                        "schema": {
-                            "$ref": "#/definitions/NewProject"
-                        }
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "Updated `Project` Object Successfully",
-                        "schema": {
-                            "$ref": "#/definitions/Project"
-                        }
-                    },
-                    "400": {
-                        "description": "Bad Request / Missing Param",
-                        "schema": {
-                            "$ref": "#/definitions/Error"
-                        }
-                    },
-                    "404": {
-                        "description": "User or ACL Schema Not Found"
-                    }
-                },
-                "security": [
-                    {
-                        "createProjectSecurity": []
-                    },
-                    {
-                        "basic_auth": []
-                    }
-                ]
-            },
-            "delete": {
-                "tags": [
-                    "Projects"
-                ],
-                "operationId": "deleteProject",
-                "description": "Delete specified `Project` Object",
-                "parameters": [
-                    {
-                        "name": "id",
-                        "in": "path",
-                        "required": true,
-                        "type": "integer",
-                        "format": "int64"
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "Successful Response"
-                    },
-                    "400": {
-                        "description": "Bad Request",
-                        "schema": {
-                            "$ref": "#/definitions/Error"
-                        }
-                    },
-                    "404": {
-                        "description": "Project Not Found"
-                    }
-                },
-                "security": [
-                    {
-                        "deleteProjectSecurity": []
-                    },
-                    {
-                        "basic_auth": []
-                    }
-                ]
-            }
-        },
-        "/projects/{id}/file": {
-            "post": {
-                "tags": [
-                    "Projects"
-                ],
-                "description": "Create file/folder in storage",
-                "operationId": "createFile",
-                "parameters": [
-                    {
-                        "name": "body",
-                        "in": "body",
-                        "required": true,
-                        "schema": {
-                            "$ref": "#/definitions/NewFile"
-                        }
-                    },
-                    {
-                        "name": "id",
-                        "in": "path",
-                        "required": true,
-                        "type": "integer",
-                        "format": "int64"
-                    }
-                ],
-                "responses": {
-                    "201": {
-                        "description": "Created file/folder",
-                        "schema": {
-                            "$ref": "#/definitions/File"
-                        }
-                    },
-                    "400": {
-                        "description": "Bad Request / Missing Param",
-                        "schema": {
-                            "$ref": "#/definitions/Error"
-                        }
-                    },
-                    "403": {
-                        "description": "Forbidden/ Permission Issue",
-                        "schema": {
-                            "$ref": "#/definitions/Error"
-                        }
-                    },
-                    "404": {
-                        "description": "Project Not Found"
-                    }
-                },
-                "security": [
-                    {
-                        "createFileSecurity": []
-                    },
-                    {
-                        "basic_auth": []
-                    }
-                ]
-            }
-        },
-        "/projects/{id}/file/acl": {
-            "post": {
-                "tags": [
-                    "Projects"
-                ],
-                "description": "Set ACL of File/Folder",
-                "operationId": "setACL",
-                "parameters": [
-                    {
-                        "name": "body",
-                        "in": "body",
-                        "required": true,
-                        "schema": {
-                            "$ref": "#/definitions/NewFile"
-                        }
-                    },
-                    {
-                        "name": "id",
-                        "in": "path",
-                        "required": true,
-                        "type": "integer",
-                        "format": "int64"
-                    }
-                ],
-                "security": [
-                    {
-                        "setACLSecurity": []
-                    },
-                    {
-                        "basic_auth": []
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "Set ACL Successfully",
-                        "schema": {
-                            "$ref": "#/definitions/File"
-                        }
-                    },
-                    "400": {
-                        "description": "Bad Request / Missing Param",
-                        "schema": {
-                            "$ref": "#/definitions/Error"
-                        }
-                    },
-                    "403": {
-                        "description": "Forbidden to Create File",
-                        "schema": {
-                            "$ref": "#/definitions/Error"
-                        }
-                    },
-                    "404": {
-                        "description": "Project Not Found"
-                    }
-                }
-            }
-        },
-        "/projects/{id}/user": {
-            "get": {
-                "tags": [
-                    "Projects",
-                    "Users"
-                ],
-                "description": "Get `User` Objects Associated With Specified `Project` Object",
-                "operationId": "getProjectUsers",
-                "responses": {
-                    "200": {
-                        "description": "Successful Response",
-                        "schema": {
-                            "type": "array",
-                            "items": {
-                                "$ref": "#/definitions/User"
-                            }
-                        }
-                    },
-                    "400": {
-                        "description": "Bad Request / Missing Param",
-                        "schema": {
-                            "$ref": "#/definitions/Error"
-                        }
-                    },
-                    "404": {
-                        "description": "Project Not Found"
-                    }
-                },
-                "security": [
-                    {
-                        "basic_auth": []
-                    }
-                ]
-            },
-            "put": {
-                "tags": [
-                    "Projects",
-                    "Users"
-                ],
-                "description": "Add `User` Object to Specified `Project` Object",
-                "operationId": "updateProjectUsers",
-                "parameters": [
-                    {
-                        "name": "body",
-                        "in": "body",
-                        "required": true,
-                        "schema": {
-                            "type": "array",
-                            "items": {
-                                "$ref": "#/definitions/User"
-                            }
-                        }
-                    }
-                ],
-                "security": [
-                    {
-                        "createProjectSecurity": []
-                    },
-                    {
-                        "basic_auth": []
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "Successful Response",
-                        "schema": {
-                            "$ref": "#/definitions/Project"
-                        }
-                    },
-                    "400": {
-                        "description": "Bad Request / Missing Param",
-                        "schema": {
-                            "$ref": "#/definitions/Error"
-                        }
-                    },
-                    "404": {
-                        "description": "Project Not Found"
-                    }
-                }
-            },
-            "parameters": [
-                {
-                    "name": "id",
-                    "in": "path",
-                    "required": true,
-                    "type": "integer",
-                    "format": "int64"
-                }
-            ]
-        },
-        "/acl/schemas": {
-            "post": {
-                "tags": [
-                    "ACLSchema"
-                ],
-                "description": "Create New `ACLSchema`",
-                "operationId": "createACLSchema",
-                "parameters": [
-                    {
-                        "name": "body",
-                        "in": "body",
-                        "required": true,
-                        "schema": {
-                            "$ref": "#/definitions/NewACLSchema"
-                        }
-                    }
-                ],
-                "responses": {
-                    "201": {
-                        "description": "Created ACL Schema Successfully",
-                        "schema": {
-                            "$ref": "#/definitions/ACLSchema"
-                        }
-                    },
-                    "400": {
-                        "description": "Bad Request / Missing Param",
-                        "schema": {
-                            "$ref": "#/definitions/Error"
-                        }
-                    }
-                },
-                "security": [
-                    {
-                        "createACLSchemaSecurity": []
-                    },
-                    {
-                        "basic_auth": []
-                    }
-                ]
-            },
-            "get": {
-                "tags": [
-                    "ACLSchema"
-                ],
-                "description": "Get Registered `ACLSchema` Objects",
-                "operationId": "getACLSchemas",
-                "responses": {
-                    "200": {
-                        "description": "Successful Response",
-                        "schema": {
-                            "type": "array",
-                            "items": {
-                                "$ref": "#/definitions/ACLSchema"
-                            }
-                        }
-                    }
-                }
-            }
-        },
-        "/acl/schemas/{id}": {
-            "get": {
-                "tags": [
-                    "ACLSchema"
-                ],
-                "description": "Get Specified `ACLSchema` Object",
-                "operationId": "getACLSchema",
-                "responses": {
-                    "200": {
-                        "description": "Successful Response",
-                        "schema": {
-                            "$ref": "#/definitions/ACLSchema"
-                        }
-                    },
-                    "400": {
-                        "description": "Bad Request / Missing Param",
-                        "schema": {
-                            "$ref": "#/definitions/Error"
-                        }
-                    },
-                    "404": {
-                        "description": "ACL Schema Not Found"
-                    }
-                }
-            },
-            "put": {
-                "tags": [
-                    "ACLSchema"
-                ],
-                "description": "Update specified `ACLSchema`",
-                "operationId": "updateACLSchema",
-                "parameters": [
-                    {
-                        "name": "body",
-                        "in": "body",
-                        "required": true,
-                        "schema": {
-                            "$ref": "#/definitions/ACLSchema"
-                        }
-                    }
-                ],
-                "security": [
-                    {
-                        "createACLSchemaSecurity": []
-                    },
-                    {
-                        "basic_auth": []
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "Updated `ACLSchema` Object",
-                        "schema": {
-                            "$ref": "#/definitions/ACLSchema"
-                        }
-                    },
-                    "400": {
-                        "description": "Bad Request / Missing Param",
-                        "schema": {
-                            "$ref": "#/definitions/Error"
-                        }
-                    },
-                    "404": {
-                        "description": "ACLSchema Not Found"
-                    }
-                }
-            },
-            "delete": {
-                "tags": [
-                    "ACLSchema"
-                ],
-                "description": "Delete specified `ACLSchema` Object",
-                "operationId": "deleteACLSchema",
-                "responses": {
-                    "200": {
-                        "description": "Successful Response"
-                    },
-                    "400": {
-                        "description": "Bad Request / Missing Param",
-                        "schema": {
-                            "$ref": "#/definitions/Error"
-                        }
-                    },
-                    "404": {
-                        "description": "ACLSchema Not Found"
-                    }
-                },
-                "security": [
-                    {
-                        "deleteACLSchemaSecurity": []
-                    },
-                    {
-                        "basic_auth": []
-                    }
-                ]
-            },
-            "parameters": [
-                {
-                    "name": "id",
-                    "in": "path",
-                    "required": true,
-                    "type": "integer",
-                    "format": "int64"
-                }
-            ]
-        },
-        "/doc": {
-            "get": {
-                "operationId": "getDoc",
-                "description": "Get Swagger Doc",
-                "responses": {
-                    "200": {
-                        "description": "Successful Request"
-                    }
-                }
-            }
-        }
-    },
-    "definitions": {
-        "NewUser": {
-            "type": "object",
-            "allOf": [
-                {
-                    "$ref": "#/definitions/User"
-                },
-                {
-                    "required": [
-                        "password"
-                    ],
-                    "properties": {
-                        "password": {
-                            "type": "string",
-                            "format": "password"
-                        }
-                    }
-                }
-            ]
-        },
-        "User": {
-            "type": "object",
-            "required": [
-                "name",
-                "permissions"
-            ],
-            "properties": {
-                "name": {
-                    "type": "string"
-                },
-                "permissions": {
-                    "type": "array",
-                    "items": {
-                        "type": "string"
-                    }
-                },
-                "created": {
-                    "type": "string",
-                    "format": "date-time"
-                },
-                "modified": {
-                    "type": "string",
-                    "format": "date-time"
-                },
-                "id": {
-                    "type": "string"
-                },
-                "uri": {
-                    "type": "string",
-                    "title": "URI",
-                    "description": "A URI to User Resource"
-                }
-            }
-        },
-        "Project": {
-            "type": "object",
-            "allOf": [
-                {
-                    "$ref": "#/definitions/NewProject"
-                },
-                {
-                    "properties": {
-                        "id": {
-                            "type": "string"
-                        },
-                        "created": {
-                            "type": "string",
-                            "format": "date-time"
-                        },
-                        "modified": {
-                            "type": "string",
-                            "format": "date-time"
-                        },
-                        "uri": {
-                            "type": "string",
-                            "title": "URI",
-                            "description": "A URI to Project Resource"
-                        }
-                    }
-                }
-            ]
-        },
-        "NewProject": {
-            "type": "object",
-            "required": [
-                "name",
-                "paths",
-                "acl_schema",
-                "users"
-            ],
-            "properties": {
-                "name": {
-                    "type": "string"
-                },
-                "paths": {
-                    "type": "object",
-                    "required": [
-                        "linux",
-                        "darwin",
-                        "windows"
-                    ],
-                    "properties": {
-                        "linux": {
-                            "type": "string"
-                        },
-                        "darwin": {
-                            "type": "string"
-                        },
-                        "windows": {
-                            "type": "string"
-                        }
-                    }
-                },
-                "acl_schema": {
-                    "type": "string"
-                },
-                "users": {
-                    "type": "array",
-                    "items": {
-                        "type": "string"
-                    },
-                    "minItems": 1
-                }
-            }
-        },
-        "ACLSchema": {
-            "type": "object",
-            "allOf": [
-                {
-                    "$ref": "#/definitions/NewACLSchema"
-                },
-                {
-                    "properties": {
-                        "id": {
-                            "type": "string"
-                        },
-                        "created": {
-                            "type": "string",
-                            "format": "date-time"
-                        },
-                        "modified": {
-                            "type": "string",
-                            "format": "date-time"
-                        },
-                        "uri": {
-                            "type": "string",
-                            "title": "URI",
-                            "description": "A URI to ACLSchema Resource"
-                        }
-                    }
-                }
-            ]
-        },
-        "NewACLSchema": {
-            "type": "object",
-            "required": [
-                "name",
-                "acl"
-            ],
-            "properties": {
-                "name": {
-                    "type": "string"
-                },
-                "acl": {
-                    "$ref": "#/definitions/DACL"
-                }
-            }
-        },
-        "DACL": {
-            "type": "object",
-            "required": [
-                "type",
-                "owner",
-                "acl"
-            ],
-            "properties": {
-                "type": {
-                    "type": "string",
-                    "enum": [
-                        "file",
-                        "folder"
-                    ]
-                },
-                "owner": {
-                    "$ref": "#/definitions/Owner"
-                },
-                "acl": {
-                    "type": "array",
-                    "items": {
-                        "$ref": "#/definitions/ACE"
-                    }
-                },
-                "children": {
-                    "type": "object"
-                },
-                "ignore_inheritance": {
-                    "type": "boolean"
-                }
-            }
-        },
-        "ACE": {
-            "type": "object",
-            "required": [
-                "owner",
-                "mask",
-                "inheritance",
-                "type"
-            ],
-            "properties": {
-                "owner": {
-                    "$ref": "#/definitions/Owner"
-                },
-                "mask": {
-                    "type": "array",
-                    "items": {
-                        "type": "string"
-                    }
-                },
-                "inheritance": {
-                    "type": "array",
-                    "items": {
-                        "type": "string"
-                    }
-                },
-                "type": {
-                    "type": "string",
-                    "enum": [
-                        "allow",
-                        "deny"
-                    ]
-                }
-            }
-        },
-        "Owner": {
-            "type": "object",
-            "required": [
-                "name",
-                "domain"
-            ],
-            "properties": {
-                "name": {
-                    "type": "string"
-                },
-                "domain": {
-                    "type": "string"
-                }
-            }
-        },
-        "File": {
-            "type": "object",
-            "properties": {
-                "path": {
-                    "type": "string"
-                },
-                "created": {
-                    "type": "string",
-                    "format": "date"
-                },
-                "modified": {
-                    "type": "string",
-                    "format": "date-time"
-                },
-                "accessed": {
-                    "type": "string",
-                    "format": "date-time"
-                },
-                "security": {
-                    "$ref": "#/definitions/FileSecurity"
-                }
-            }
-        },
-        "NewFile": {
-            "type": "object",
-            "required": [
-                "path",
-                "type",
-                "platform"
-            ],
-            "properties": {
-                "type": {
-                    "type": "string",
-                    "enum": [
-                        "file",
-                        "folder"
-                    ]
-                },
-                "path": {
-                    "type": "string",
-                    "enum": [
-                        "linux",
-                        "darwin",
-                        "windows"
-                    ]
-                },
-                "platform": {
-                    "type": "string"
-                }
-            }
-        },
-        "FileSecurity": {
-            "type": "object",
-            "properties": {
-                "owner": {
-                    "type": "string"
-                },
-                "acl": {
-                    "type": "array",
-                    "items": {
-                        "$ref": "#/definitions/ACE"
-                    }
-                }
-            }
-        },
-        "Error": {
-            "type": "object",
-            "properties": {
-                "title": {
-                    "type": "string"
-                },
-                "description": {
-                    "type": "string"
-                }
-            }
-        }
-    },
-    "securityDefinitions": {
-        "basic_auth": {
-            "type": "basic",
-            "description": "HTTP Header Based Authentication"
-        },
-        "createUserSecurity": {
-            "type": "basic",
-            "description": "User with Ability to Create `User` Objects"
-        },
-        "deleteUserSecurity": {
-            "type": "basic",
-            "description": "User with Ability to Delete `User` Objects"
-        },
-        "createProjectSecurity": {
-            "type": "basic",
-            "description": "User with Ability to Create `Project` Objects"
-        },
-        "deleteProjectSecurity": {
-            "type": "basic",
-            "description": "User with Ability to Delete `Project` Objects"
-        },
-        "createFileSecurity": {
-            "type": "basic",
-            "description": "User with Ability to Create Files"
-        },
-        "setACLSecurity": {
-            "type": "basic",
-            "description": "User with Ability to Set ACL on Files"
-        },
-        "createACLSchemaSecurity": {
-            "type": "basic",
-            "description": "User with Ability to CRUD `ACLSchema` Objects"
-        },
-        "deleteACLSchemaSecurity": {
-            "type": "basic",
-            "description": "User wtih ability to Delete `ACLSchema` Objects"
-        }
+  "swagger": "2.0",
+  "info": {
+    "version": "0.6.1",
+    "title": "File Creation Service",
+    "description": "**User Name and Password**\n* User Name: `user`\n* Password: `pass`"
+  },
+  "basePath": "/api",
+  "schemes": [
+    "http"
+  ],
+  "consumes": [
+    "application/json"
+  ],
+  "produces": [
+    "application/json"
+  ],
+  "security": [
+    {
+      "basic_auth": []
     }
+  ],
+  "paths": {
+    "/users": {
+      "post": {
+        "tags": [
+          "Users"
+        ],
+        "operationId": "createUser",
+        "description": "Creates `user` object.\nDoes **require** createUser permission.\n",
+        "parameters": [
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/NewUser"
+            }
+          }
+        ],
+        "produces": [
+          "application/json"
+        ],
+        "responses": {
+          "201": {
+            "description": "Created `User` Object",
+            "schema": {
+              "$ref": "#/definitions/User"
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "schema": {
+              "$ref": "#/definitions/Error"
+            }
+          },
+          "409": {
+            "description": "Conflict, Username Already Exists",
+            "schema": {
+              "$ref": "#/definitions/Error"
+            }
+          }
+        },
+        "security": [
+          {
+            "basic_auth": []
+          },
+          {
+            "createUserSecurity": []
+          }
+        ]
+      },
+      "get": {
+        "tags": [
+          "Users"
+        ],
+        "operationId": "getUsers",
+        "description": "Gets all registered `User` objects.\n",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "schema": {
+              "type": "array",
+              "items": {
+                "$ref": "#/definitions/User"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/users/{id}": {
+      "get": {
+        "tags": [
+          "Users"
+        ],
+        "description": "Get specified `User` object",
+        "operationId": "getUser",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "schema": {
+              "type": "array",
+              "items": {
+                "$ref": "#/definitions/User"
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "schema": {
+              "$ref": "#/definitions/Error"
+            }
+          },
+          "404": {
+            "description": "User Not Found"
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "Users"
+        ],
+        "description": "Delete specified `User` object",
+        "operationId": "deleteUser",
+        "responses": {
+          "200": {
+            "description": "User Deleted"
+          },
+          "400": {
+            "description": "Bad Request",
+            "schema": {
+              "$ref": "#/definitions/Error"
+            }
+          },
+          "404": {
+            "description": "User Not Found"
+          }
+        },
+        "security": [
+          {
+            "deleteUserSecurity": []
+          },
+          {
+            "basic_auth": []
+          }
+        ]
+      },
+      "put": {
+        "tags": [
+          "Users"
+        ],
+        "description": "Update specified `User` object",
+        "operationId": "updateUser",
+        "parameters": [
+          {
+            "name": "body",
+            "in": "body",
+            "description": "JSON User Object",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/User"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "User object updated"
+          },
+          "400": {
+            "description": "Bad Request",
+            "schema": {
+              "$ref": "#/definitions/Error"
+            }
+          },
+          "404": {
+            "description": "User Not Found"
+          },
+          "409": {
+            "description": "Conflict, Username Already Exists",
+            "schema": {
+              "$ref": "#/definitions/Error"
+            }
+          }
+        },
+        "security": [
+          {
+            "createUserSecurity": []
+          },
+          {
+            "basic_auth": []
+          }
+        ]
+      },
+      "parameters": [
+        {
+          "name": "id",
+          "in": "path",
+          "required": true,
+          "type": "integer",
+          "format": "int64"
+        }
+      ]
+    },
+    "/projects": {
+      "get": {
+        "tags": [
+          "Projects"
+        ],
+        "description": "Get registered `Project` objects",
+        "operationId": "getProjects",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "schema": {
+              "type": "array",
+              "items": {
+                "$ref": "#/definitions/Project"
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "Projects"
+        ],
+        "description": "Create new `Project` object",
+        "operationId": "createProject",
+        "parameters": [
+          {
+            "name": "body",
+            "in": "body",
+            "description": "JSON Project Object",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/NewProject"
+            }
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": "Created `Project` Object Successful",
+            "schema": {
+              "$ref": "#/definitions/Project"
+            }
+          },
+          "400": {
+            "description": "Bad Request / Missing Param",
+            "schema": {
+              "$ref": "#/definitions/Error"
+            }
+          },
+          "404": {
+            "description": "User or ACL Schema Not Found"
+          }
+        },
+        "security": [
+          {
+            "createProjectSecurity": []
+          },
+          {
+            "basic_auth": []
+          }
+        ]
+      }
+    },
+    "/projects/{id}": {
+      "get": {
+        "tags": [
+          "Projects"
+        ],
+        "description": "Get specified `Project` Object",
+        "operationId": "getProject",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "type": "integer",
+            "format": "int64"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "schema": {
+              "$ref": "#/definitions/Project"
+            }
+          }
+        },
+        "security": [
+          {
+            "basic_auth": []
+          }
+        ]
+      },
+      "put": {
+        "tags": [
+          "Projects"
+        ],
+        "operationId": "updateProject",
+        "description": "Update specified `Project` Object",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "type": "integer",
+            "format": "int64"
+          },
+          {
+            "name": "body",
+            "in": "body",
+            "description": "JSON Project Object",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/NewProject"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Updated `Project` Object Successfully",
+            "schema": {
+              "$ref": "#/definitions/Project"
+            }
+          },
+          "400": {
+            "description": "Bad Request / Missing Param",
+            "schema": {
+              "$ref": "#/definitions/Error"
+            }
+          },
+          "404": {
+            "description": "User or ACL Schema Not Found"
+          }
+        },
+        "security": [
+          {
+            "createProjectSecurity": []
+          },
+          {
+            "basic_auth": []
+          }
+        ]
+      },
+      "delete": {
+        "tags": [
+          "Projects"
+        ],
+        "operationId": "deleteProject",
+        "description": "Delete specified `Project` Object",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "type": "integer",
+            "format": "int64"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response"
+          },
+          "400": {
+            "description": "Bad Request",
+            "schema": {
+              "$ref": "#/definitions/Error"
+            }
+          },
+          "404": {
+            "description": "Project Not Found"
+          }
+        },
+        "security": [
+          {
+            "deleteProjectSecurity": []
+          },
+          {
+            "basic_auth": []
+          }
+        ]
+      }
+    },
+    "/projects/{id}/file": {
+      "post": {
+        "tags": [
+          "Projects"
+        ],
+        "description": "Create file/folder in storage",
+        "operationId": "createFile",
+        "parameters": [
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/NewFile"
+            }
+          },
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "type": "integer",
+            "format": "int64"
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": "Created file/folder",
+            "schema": {
+              "$ref": "#/definitions/File"
+            }
+          },
+          "400": {
+            "description": "Bad Request / Missing Param",
+            "schema": {
+              "$ref": "#/definitions/Error"
+            }
+          },
+          "403": {
+            "description": "Forbidden/ Permission Issue",
+            "schema": {
+              "$ref": "#/definitions/Error"
+            }
+          },
+          "404": {
+            "description": "Project Not Found"
+          }
+        },
+        "security": [
+          {
+            "createFileSecurity": []
+          },
+          {
+            "basic_auth": []
+          }
+        ]
+      }
+    },
+    "/projects/{id}/file/acl": {
+      "post": {
+        "tags": [
+          "Projects"
+        ],
+        "description": "Set ACL of File/Folder",
+        "operationId": "setACL",
+        "parameters": [
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/NewFile"
+            }
+          },
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "type": "integer",
+            "format": "int64"
+          }
+        ],
+        "security": [
+          {
+            "setACLSecurity": []
+          },
+          {
+            "basic_auth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Set ACL Successfully",
+            "schema": {
+              "$ref": "#/definitions/File"
+            }
+          },
+          "400": {
+            "description": "Bad Request / Missing Param",
+            "schema": {
+              "$ref": "#/definitions/Error"
+            }
+          },
+          "403": {
+            "description": "Forbidden to Create File",
+            "schema": {
+              "$ref": "#/definitions/Error"
+            }
+          },
+          "404": {
+            "description": "Project Not Found"
+          }
+        }
+      }
+    },
+    "/projects/{id}/user": {
+      "get": {
+        "tags": [
+          "Projects",
+          "Users"
+        ],
+        "description": "Get `User` Objects Associated With Specified `Project` Object",
+        "operationId": "getProjectUsers",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "schema": {
+              "type": "array",
+              "items": {
+                "$ref": "#/definitions/User"
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request / Missing Param",
+            "schema": {
+              "$ref": "#/definitions/Error"
+            }
+          },
+          "404": {
+            "description": "Project Not Found"
+          }
+        },
+        "security": [
+          {
+            "basic_auth": []
+          }
+        ]
+      },
+      "put": {
+        "tags": [
+          "Projects",
+          "Users"
+        ],
+        "description": "Add `User` Object to Specified `Project` Object",
+        "operationId": "updateProjectUsers",
+        "parameters": [
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "type": "array",
+              "items": {
+                "$ref": "#/definitions/User"
+              }
+            }
+          }
+        ],
+        "security": [
+          {
+            "createProjectSecurity": []
+          },
+          {
+            "basic_auth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "schema": {
+              "$ref": "#/definitions/Project"
+            }
+          },
+          "400": {
+            "description": "Bad Request / Missing Param",
+            "schema": {
+              "$ref": "#/definitions/Error"
+            }
+          },
+          "404": {
+            "description": "Project Not Found"
+          }
+        }
+      },
+      "parameters": [
+        {
+          "name": "id",
+          "in": "path",
+          "required": true,
+          "type": "integer",
+          "format": "int64"
+        }
+      ]
+    },
+    "/acl/schemas": {
+      "post": {
+        "tags": [
+          "ACLSchema"
+        ],
+        "description": "Create New `ACLSchema`",
+        "operationId": "createACLSchema",
+        "parameters": [
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/NewACLSchema"
+            }
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": "Created ACL Schema Successfully",
+            "schema": {
+              "$ref": "#/definitions/ACLSchema"
+            }
+          },
+          "400": {
+            "description": "Bad Request / Missing Param",
+            "schema": {
+              "$ref": "#/definitions/Error"
+            }
+          }
+        },
+        "security": [
+          {
+            "createACLSchemaSecurity": []
+          },
+          {
+            "basic_auth": []
+          }
+        ]
+      },
+      "get": {
+        "tags": [
+          "ACLSchema"
+        ],
+        "description": "Get Registered `ACLSchema` Objects",
+        "operationId": "getACLSchemas",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "schema": {
+              "type": "array",
+              "items": {
+                "$ref": "#/definitions/ACLSchema"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/acl/schemas/{id}": {
+      "get": {
+        "tags": [
+          "ACLSchema"
+        ],
+        "description": "Get Specified `ACLSchema` Object",
+        "operationId": "getACLSchema",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "schema": {
+              "$ref": "#/definitions/ACLSchema"
+            }
+          },
+          "400": {
+            "description": "Bad Request / Missing Param",
+            "schema": {
+              "$ref": "#/definitions/Error"
+            }
+          },
+          "404": {
+            "description": "ACL Schema Not Found"
+          }
+        }
+      },
+      "put": {
+        "tags": [
+          "ACLSchema"
+        ],
+        "description": "Update specified `ACLSchema`",
+        "operationId": "updateACLSchema",
+        "parameters": [
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/ACLSchema"
+            }
+          }
+        ],
+        "security": [
+          {
+            "createACLSchemaSecurity": []
+          },
+          {
+            "basic_auth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Updated `ACLSchema` Object",
+            "schema": {
+              "$ref": "#/definitions/ACLSchema"
+            }
+          },
+          "400": {
+            "description": "Bad Request / Missing Param",
+            "schema": {
+              "$ref": "#/definitions/Error"
+            }
+          },
+          "404": {
+            "description": "ACLSchema Not Found"
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "ACLSchema"
+        ],
+        "description": "Delete specified `ACLSchema` Object",
+        "operationId": "deleteACLSchema",
+        "responses": {
+          "200": {
+            "description": "Successful Response"
+          },
+          "400": {
+            "description": "Bad Request / Missing Param",
+            "schema": {
+              "$ref": "#/definitions/Error"
+            }
+          },
+          "404": {
+            "description": "ACLSchema Not Found"
+          }
+        },
+        "security": [
+          {
+            "deleteACLSchemaSecurity": []
+          },
+          {
+            "basic_auth": []
+          }
+        ]
+      },
+      "parameters": [
+        {
+          "name": "id",
+          "in": "path",
+          "required": true,
+          "type": "integer",
+          "format": "int64"
+        }
+      ]
+    },
+    "/doc": {
+      "get": {
+        "operationId": "getDoc",
+        "description": "Get Swagger Doc",
+        "responses": {
+          "200": {
+            "description": "Successful Request"
+          }
+        }
+      }
+    }
+  },
+  "definitions": {
+    "NewUser": {
+      "type": "object",
+      "allOf": [
+        {
+          "$ref": "#/definitions/User"
+        },
+        {
+          "required": [
+            "password"
+          ],
+          "properties": {
+            "password": {
+              "type": "string",
+              "format": "password"
+            }
+          }
+        }
+      ]
+    },
+    "User": {
+      "type": "object",
+      "required": [
+        "name",
+        "permissions"
+      ],
+      "properties": {
+        "name": {
+          "type": "string"
+        },
+        "permissions": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "created": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "modified": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "id": {
+          "type": "string"
+        },
+        "uri": {
+          "type": "string",
+          "title": "URI",
+          "description": "A URI to User Resource"
+        }
+      }
+    },
+    "Project": {
+      "type": "object",
+      "allOf": [
+        {
+          "$ref": "#/definitions/NewProject"
+        },
+        {
+          "properties": {
+            "id": {
+              "type": "string"
+            },
+            "created": {
+              "type": "string",
+              "format": "date-time"
+            },
+            "modified": {
+              "type": "string",
+              "format": "date-time"
+            },
+            "uri": {
+              "type": "string",
+              "title": "URI",
+              "description": "A URI to Project Resource"
+            }
+          }
+        }
+      ]
+    },
+    "NewProject": {
+      "type": "object",
+      "required": [
+        "name",
+        "paths",
+        "acl_schema",
+        "users"
+      ],
+      "properties": {
+        "name": {
+          "type": "string"
+        },
+        "paths": {
+          "type": "object",
+          "required": [
+            "linux",
+            "darwin",
+            "windows"
+          ],
+          "properties": {
+            "linux": {
+              "type": "string"
+            },
+            "darwin": {
+              "type": "string"
+            },
+            "windows": {
+              "type": "string"
+            }
+          }
+        },
+        "acl_schema": {
+          "type": "string"
+        },
+        "users": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "minItems": 1
+        }
+      }
+    },
+    "ACLSchema": {
+      "type": "object",
+      "allOf": [
+        {
+          "$ref": "#/definitions/NewACLSchema"
+        },
+        {
+          "properties": {
+            "id": {
+              "type": "string"
+            },
+            "created": {
+              "type": "string",
+              "format": "date-time"
+            },
+            "modified": {
+              "type": "string",
+              "format": "date-time"
+            },
+            "uri": {
+              "type": "string",
+              "title": "URI",
+              "description": "A URI to ACLSchema Resource"
+            }
+          }
+        }
+      ]
+    },
+    "NewACLSchema": {
+      "type": "object",
+      "required": [
+        "name",
+        "acl"
+      ],
+      "properties": {
+        "name": {
+          "type": "string"
+        },
+        "acl": {
+          "$ref": "#/definitions/DACL"
+        }
+      }
+    },
+    "DACL": {
+      "type": "object",
+      "properties": {
+        "pathcomponent_matcher": {
+          "type": "object",
+          "required": [
+            "type",
+            "owner",
+            "acl"
+          ],
+          "properties": {
+            "type": {
+              "type": "string",
+              "enum": [
+                "file",
+                "folder"
+              ]
+            },
+            "owner": {
+              "$ref": "#/definitions/Owner"
+            },
+            "acl": {
+              "type": "array",
+              "items": {
+                "$ref": "#/definitions/ACE"
+              }
+            },
+            "children": {
+              "type": "object"
+            },
+            "ignore_inheritance": {
+              "type": "boolean"
+            }
+          }
+        }
+      }
+    },
+    "ACE": {
+      "type": "object",
+      "required": [
+        "owner",
+        "mask",
+        "inheritance",
+        "type"
+      ],
+      "properties": {
+        "owner": {
+          "$ref": "#/definitions/Owner"
+        },
+        "mask": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "inheritance": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "type": {
+          "type": "string",
+          "enum": [
+            "allow",
+            "deny"
+          ]
+        }
+      }
+    },
+    "Owner": {
+      "type": "object",
+      "required": [
+        "name",
+        "domain"
+      ],
+      "properties": {
+        "name": {
+          "type": "string"
+        },
+        "domain": {
+          "type": "string"
+        }
+      }
+    },
+    "File": {
+      "type": "object",
+      "properties": {
+        "path": {
+          "type": "string"
+        },
+        "created": {
+          "type": "string",
+          "format": "date"
+        },
+        "modified": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "accessed": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "security": {
+          "$ref": "#/definitions/FileSecurity"
+        }
+      }
+    },
+    "NewFile": {
+      "type": "object",
+      "required": [
+        "path",
+        "type",
+        "platform"
+      ],
+      "properties": {
+        "type": {
+          "type": "string",
+          "enum": [
+            "file",
+            "folder"
+          ]
+        },
+        "path": {
+          "type": "string",
+          "enum": [
+            "linux",
+            "darwin",
+            "windows"
+          ]
+        },
+        "platform": {
+          "type": "string"
+        }
+      }
+    },
+    "FileSecurity": {
+      "type": "object",
+      "properties": {
+        "owner": {
+          "type": "string"
+        },
+        "acl": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/ACE"
+          }
+        }
+      }
+    },
+    "Error": {
+      "type": "object",
+      "properties": {
+        "title": {
+          "type": "string"
+        },
+        "description": {
+          "type": "string"
+        }
+      }
+    }
+  },
+  "securityDefinitions": {
+    "basic_auth": {
+      "type": "basic",
+      "description": "HTTP Header Based Authentication"
+    },
+    "createUserSecurity": {
+      "type": "basic",
+      "description": "User with Ability to Create `User` Objects"
+    },
+    "deleteUserSecurity": {
+      "type": "basic",
+      "description": "User with Ability to Delete `User` Objects"
+    },
+    "createProjectSecurity": {
+      "type": "basic",
+      "description": "User with Ability to Create `Project` Objects"
+    },
+    "deleteProjectSecurity": {
+      "type": "basic",
+      "description": "User with Ability to Delete `Project` Objects"
+    },
+    "createFileSecurity": {
+      "type": "basic",
+      "description": "User with Ability to Create Files"
+    },
+    "setACLSecurity": {
+      "type": "basic",
+      "description": "User with Ability to Set ACL on Files"
+    },
+    "createACLSchemaSecurity": {
+      "type": "basic",
+      "description": "User with Ability to CRUD `ACLSchema` Objects"
+    },
+    "deleteACLSchemaSecurity": {
+      "type": "basic",
+      "description": "User wtih ability to Delete `ACLSchema` Objects"
+    }
+  }
 }
