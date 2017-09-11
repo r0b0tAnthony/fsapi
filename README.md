@@ -5,9 +5,25 @@ fsapi utilizes the [swagger/OpenAPI Specification](https://swagger.io), [serve_s
 
 **fsapi is in beta.**
 
+1. [Use Cases](#useCases)
+2. [Dependencies](#dependencies)
+3. [API Specification](#apiSpecification)
+4. [Install](#install)
+5. [How fsapi Works](#howFsapiWorks)
+    1. [Objects](#objects)
+        1. [User](#userObject)
+            1. [User permissions](#userPermissions)
+        2. [Project](#projectObject)
+        3. [ACLSchema](#aclSchemaObject)
+            1. [Schema Specification](#schemaSpecification)
+            2. [Attributes](#schemaAttributes)
+            3. [Access Masks](#accessMasks)
+            4. [Inheritance Masks](#inheritanceMasks)
+
+
 ***
 
-## Use Cases
+## <a name="useCases"></a> Use Cases
 fsapi was built to allow non-admin users to set permissions / ACLs on files dynamically, especially for file structures that break Windows' ACL inheritance. Other methodologies of allowing local scripts to login as privileged user were entirely insecure.
 
 The best way forward is to expose the pywin32 api via REST, laying a fsapi user, project, and schema based system on top to provide security and predicability in ACLs. The reason for making an independent user system was to avoid tying further into AD, possibly opening fsapi in the future to other filesystems / permissions management.
@@ -16,7 +32,7 @@ Additionally, fsapi allowed for a more dynamic setting of permissions via schema
 
 ***
 
-## Dependencies
+## <a name="dependencies"></a>Dependencies
 
 * Windows Server(Tested on Windows Server 2012)
 * Swagger 2.0 Spec
@@ -30,7 +46,7 @@ Additionally, fsapi allowed for a more dynamic setting of permissions via schema
 
 ***
 
-## API Specification
+## <a name="apiSpecification"></a>API Specification
 You can preview using Swagger's online [Swagger UI](https://generator.swagger.io/).
 
 Paste the following into the text box and hit *Explore*:
@@ -38,7 +54,7 @@ Paste the following into the text box and hit *Explore*:
 
 ***
 
-## Install
+## <a name="install"></a>Install
 
 1. Setup a Windows Server with Access to AD
 2. Install Python 2.7.x
@@ -50,17 +66,17 @@ Paste the following into the text box and hit *Explore*:
 
 ***
 
-## How fsapi Works
+## <a name="howFsapiWorks"></a> How fsapi Works
 
-### Objects
+### <a name="objects"></a> Objects
 
-#### User
+#### <a name="userObject"></a> User
 
 fsapi has an independent user system from Windows or it's host platform in general. fsapi Users have permissions that allow them certain CRUD abilities within fsapi.
 
 Users are assigned to projects and based on their user permissions they have certain abilities in projects.
 
-##### User Permissions
+##### <a name="userPermissions"></a>User Permissions
 
 * **createUser** - Permission to Create a User Object
 * **deleteUser** - Permission to Delete a User Object
@@ -73,15 +89,15 @@ Users are assigned to projects and based on their user permissions they have cer
 
 ***
 
-#### Project
+#### <a name="projectObject"></a> Project
 Projects in fsapi map to a multi-platform(Linux, Windows, MacOS/Darwin) root folder and have an ACLSchema object assigned as well.
 
 ***
 
-#### ACLSchema
+#### <a name="aclSchemaObject"></a> ACLSchema
 ACLSchemas are JSON hierarchical structures of the filesystem relative to a Project's root folder.
 
-##### Schema Specification
+##### <a name="schemaSpecification"></a> Schema Specification
 
 ```
 {
@@ -124,7 +140,7 @@ ACLSchemas are JSON hierarchical structures of the filesystem relative to a Proj
 }
 ```
 
-##### Attributes
+##### <a name="schemaAttributes"></a> Attributes
 **pathcomponent**: A string or regex to match against a path component.
 
 **type**: Either `file` or `folder` representing what kind of file this ACL should be applied to.
@@ -149,7 +165,7 @@ ACLSchemas are JSON hierarchical structures of the filesystem relative to a Proj
 
 ***
 
-##### Access Masks
+##### <a name="accessMasks"></a> Access Masks
 These are bit-wise masks that represent permissions for file and directories. You can read more on these at Microsoft's Documentation on [Access Masks](https://msdn.microsoft.com/en-us/library/windows/desktop/aa374896.aspx).
 
 *Base Access Masks*:
@@ -164,7 +180,7 @@ Are made of certain base access masks.
 
 `CUSTOM_MODIFY` is made of: `DELETE`, `READ_CONTROL`, `SYNCHRONIZE`, `READ_DATA`, `LIST_DIRECTORY`, `WRITE_DATA`, `ADD_FILE`, `APPEND_DATA`, `ADD_SUBDIRECTORY`, `CREATE_PIPE_INSTANCE`, `READ_EA`, `WRITE_EA`, `EXECUTE`, `TRAVERSE`, `DELETE_CHILD`, `READ_ATTRIBUTES`, `WRITE_ATTRIBUTES`
 
-##### Inheritance Masks
+##### <a name="inheritanceMasks"></a> Inheritance Masks
 These are bit-wise masks that represent how an ACE should be inherited in a file a structure. You can read more about Windows Inheritance Masks [here](https://msdn.microsoft.com/en-us/library/windows/desktop/aa374924.aspx).
 
 *Base Inheritance Masks*:
