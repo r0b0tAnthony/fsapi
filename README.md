@@ -166,7 +166,7 @@ ACLSchemas are JSON hierarchical structures of the filesystem relative to a Proj
 
 **ignore_inheritance**: Boolean whether to break/ignore the inheritance of this pathcomponent. Effectively, clearing all inherited ACEs for this file/folder.
 
-**children**: Another dictionary definition of child path components, following the schema of the parent. Any children not defined will receive the same schema defined as their parent schema.
+**children**: Another dictionary definition of child path components, following the schema of the parent. Any children not defined will receive the same schema defined as their parent schema. This object setting is recursive allowing for creating full hierarchical representations of the file system.
 
 ***
 
