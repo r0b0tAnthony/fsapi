@@ -63,6 +63,11 @@ Paste the following into the text box and hit *Explore*:
 4. Clone/Download fsapi
 5. Install Python Modules
     * `pip -r requirements.txt`
+6. Create First User
+    1. Run fsapi.py via Python
+    2. Send a `POST` request to `http://hostname:8080/api/users`, please reference the API Specification for query syntax.
+        1. Be sure you first user has all [permissions](#userPermissions).
+        2. For creation of the first user, you must still supply a basic http auth header. Can be credentials of the user you are creating or some fake credentials.
 
 ***
 
