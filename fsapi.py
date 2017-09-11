@@ -98,7 +98,11 @@ def RequireJson(**request_handler_args):
 
 def CreateUser(**request_handler_args):
     req = request_handler_args['req']
-    authUser(req, request_handler_args['resp'], ['createUser'])
+    try:
+        authUser(req, request_handler_args['resp'], ['createUser'])
+    except User.DoesNotExist:
+        if User.objects.all().count() < 1:
+            pass
     doc = req.context['doc']
     try:
         user = User(username = doc['username'], password = doc['password'], permissions = doc['permissions'], auth_b64 = User.GetAuthBase64(doc['username'], doc['password']))
