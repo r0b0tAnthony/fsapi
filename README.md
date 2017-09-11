@@ -5,12 +5,16 @@ fsapi utilizes the [swagger/OpenAPI Specification](https://swagger.io), [serve_s
 
 **fsapi is in beta.**
 
+***
+
 ## Use Cases
 fsapi was built to allow non-admin users to set permissions / ACLs on files dynamically, especially for file structures that break Windows' ACL inheritance. Other methodologies of allowing local scripts to login as privileged user were entirely insecure.
 
 The best way forward is to expose the pywin32 api via REST, laying a fsapi user, project, and schema based system on top to provide security and predicability in ACLs. The reason for making an independent user system was to avoid tying further into AD, possibly opening fsapi in the future to other filesystems / permissions management.
 
 Additionally, fsapi allowed for a more dynamic setting of permissions via schemas that harness regex matching.
+
+***
 
 ## Dependencies
 
@@ -24,11 +28,15 @@ Additionally, fsapi allowed for a more dynamic setting of permissions via schema
     * [pymodm](http://pymodm.readthedocs.io/en/stable/) >= 0.2.0
     * [pywin32](https://sourceforge.net/projects/pywin32/) >= build 220
 
+***
+
 ## API Specification
 You can preview using Swagger's online [Swagger UI](https://generator.swagger.io/).
 
 Paste the following into the text box and hit *Explore*:
 `https://raw.githubusercontent.com/r0b0tAnthony/fsapi/master/swagger.json`
+
+***
 
 ## Install
 
@@ -39,6 +47,8 @@ Paste the following into the text box and hit *Explore*:
 4. Clone/Download fsapi
 5. Install Python Modules
     * `pip -r requirements.txt`
+
+***
 
 ## How fsapi Works
 
@@ -61,8 +71,12 @@ Users are assigned to projects and based on their user permissions they have cer
 * **createFile** - Permission to Create a File/Folder Within A Project
 * **setACL** - Permission to Apply an ACLSchema to File/Folder in a Project
 
+***
+
 #### Project
 Projects in fsapi map to a multi-platform(Linux, Windows, MacOS/Darwin) root folder and have an ACLSchema object assigned as well.
+
+***
 
 #### ACLSchema
 ACLSchemas are JSON hierarchical structures of the filesystem relative to a Project's root folder.
@@ -110,7 +124,7 @@ ACLSchemas are JSON hierarchical structures of the filesystem relative to a Proj
 }
 ```
 
-###### Attributes
+##### Attributes
 **pathcomponent**: A string or regex to match against a path component.
 
 **type**: Either `file` or `folder` representing what kind of file this ACL should be applied to.
@@ -125,10 +139,34 @@ ACLSchemas are JSON hierarchical structures of the filesystem relative to a Proj
 * **owner**: Similar to structure to file/folder's owner.
     * **name**: Name of user/group this ACE applies to.
     * **domain**: Domain of this user/group.
-* **mask**: A list/array of Windows ACE Permission Masks based off of standard Windows ACE Masks.
-* **inheritance**: A list/array of Windows ACE inheritance masks.
-* **type**: Either `allow` or `deny` ACE.
+* **mask**: A list/array of Windows ACE Access Masks based off of standard Windows ACE Access Masks. These are combined together thru bit-wise operations.
+* **inheritance**: A list/array of Windows ACE inheritance masks. These are combined thru bit-wise operations.
+* **type**: Either the ACE is an `allow` or `deny`.
 
-**ignore_inheritance**: Boolean whether to break/ignore the inheritance of this pathcomponent.
+**ignore_inheritance**: Boolean whether to break/ignore the inheritance of this pathcomponent. Effectively, clearing all inherited ACEs for this file/folder.
 
-###### Masks
+**children**: Another dictionary definition of child path components, following the schema of the parent. Any children not defined will receive the same schema defined as their parent schema.
+
+***
+
+##### Access Masks
+These are bit-wise masks that represent permissions for file and directories. You can read more on these at Microsoft's Documentation on [Access Masks](https://msdn.microsoft.com/en-us/library/windows/desktop/aa374896.aspx).
+
+*Base Access Masks*:
+
+`READ_DATA`, `LIST_DIRECTORY`, `WRITE_DATA`, `ADD_FILE`, `APPEND_DATA`, `ADD_SUBDIRECTORY`, `CREATE_PIPE_INSTANCE`, `READ_EA`, `WRITE_EA`, `EXECUTE`, `TRAVERSE`, `DELETE_CHILD`, `DELETE`, `READ_CONTROL`, `READ_ATTRIBUTES`, `WRITE_ATTRIBUTES`, `GENERIC_READ`, `GENERIC_WRITE`, `GENERIC_EXECUTE`, `WRITE_DAC`, `WRITE_OWNER`, `SYNCHRONIZE`
+
+*Computed Access Masks*:
+
+Are made of certain base access masks.
+
+`CUSTOM_ALL_ACCESS` is made of: `SYNCHRONIZE`, `READ_DATA`, `LIST_DIRECTORY`, `WRITE_DATA`, `ADD_FILE`, `APPEND_DATA`, `ADD_SUBDIRECTORY`, `CREATE_PIPE_INSTANCE`, `READ_EA`, `WRITE_EA`, `EXECUTE`, `TRAVERSE`, `DELETE_CHILD`, `READ_ATTRIBUTES`, `WRITE_ATTRIBUTES`
+
+`CUSTOM_MODIFY` is made of: `DELETE`, `READ_CONTROL`, `SYNCHRONIZE`, `READ_DATA`, `LIST_DIRECTORY`, `WRITE_DATA`, `ADD_FILE`, `APPEND_DATA`, `ADD_SUBDIRECTORY`, `CREATE_PIPE_INSTANCE`, `READ_EA`, `WRITE_EA`, `EXECUTE`, `TRAVERSE`, `DELETE_CHILD`, `READ_ATTRIBUTES`, `WRITE_ATTRIBUTES`
+
+##### Inheritance Masks
+These are bit-wise masks that represent how an ACE should be inherited in a file a structure. You can read more about Windows Inheritance Masks [here](https://msdn.microsoft.com/en-us/library/windows/desktop/aa374924.aspx).
+
+*Base Inheritance Masks*:
+
+`OBJECT_INHERIT`, `CONTAINER_INHERIT`, `NO_PROPOGATE_INHERIT`, `INHERIT_ONLY`
